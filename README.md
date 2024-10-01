@@ -1,11 +1,9 @@
 [![Actions Status: build](https://github.com/EOSChronicleProject/eos-chronicle/workflows/build/badge.svg)](https://github.com/EOSChronicleProject/eos-chronicle/actions/workflows/build.yml/badge.svg)
 
-# Antelope Chronicle Project
+# FIO Chronicle Project
 
-Chronicle is a software component designed to process the history of
-an [Antelope](https://github.com/AntelopeIO/leap) (formely EOSIO)
-blockchain.
-
+FIO.Chronicle is a fork of the EOSChronicle project which is a software component designed to process the history of
+an [Antelope](https://github.com/AntelopeIO/leap) (formely EOSIO) blockchain.
 
 # chronicle-receiver
 
@@ -48,8 +46,6 @@ connection closes, the receiver will stop itself and close the
 connection to `nodeos`. The package includes a systemd unit file which
 would restart the receiver automatically in this case.
 
-
-
 ## Scanning mode
 
 When `mode` option is set to `scan`, `chronicle-receiver` operates as
@@ -74,12 +70,10 @@ follows:
   described above, the consumer must send acknowledgements for processed
   block numbers.
 
-
 In `scan-noexport` mode, the receiver requests the blocks from state
 history sequentially and stores all revisions of contract ABI in its
 database. This allows the ABIs to be quickly available for the
 interactive mode.
-
 
 ## Interactive mode
 
@@ -108,8 +102,6 @@ Note that in case of `exp_ws_plugin`, you need to specify a different
 TCP port of the websocket server, so that it does not interfere with the
 websocket communication in scanning mode when export is enabled.
 
-
-
 ## State database
 
 `chronicle-receiver` utilizes `chainbase`, the same shared-memory
@@ -126,9 +118,6 @@ stores also ABI for all contracts that it detects from `setabi`
 actions. Chainbase is maintaining the history of revisions down to the
 unacknowledged or irreversible block, in order to be able to roll back
 in case of a fork or in case of receiver restart.
-
-
-
 
 ## Websocket exporter plugin
 
@@ -161,7 +150,6 @@ request as a single binary message. The content of each message is
 either one block number in decimal text notation, or two decimal
 integers separated by minus sign (-) indicating a range of blocks.
 
-
 # Compiling
 
 Minimum requirements: Cmake 3.11, Boost 1.67, GCC 8.3.0.
@@ -177,8 +165,6 @@ cd eos-chronicle
 ./pinned_build/install_deps.sh && mkdir build && \
  nice ./pinned_build/chronicle_pinned_build.sh /opt/src/chronicle-deps /opt/src/eos-chronicle/build $(nproc)
 ```
-
-
 
 # State history plugin in `nodeos`
 
@@ -200,7 +186,6 @@ chain-state-history = true
 trace-history-debug-mode = true
 state-history-endpoint = 0.0.0.0:8080
 ```
-
 
 # Configuring and running
 
@@ -326,8 +311,6 @@ systemctl start -a  'chronicle_receiver@*'
 # check the consumer health
 journalctl -u memento_dbwriter@wax1 -f
 ```
-
-
 
 # Command-line and configuration options
 
@@ -473,12 +456,6 @@ Options for `exp_ws_plugin`:
 
 * `exp-ws-max-queue = N` (=10000): Receiver will pause if outbound queue exceeds this limit.
 
-
-
-
-
-
-
 # Release notes
 
 ## Release 1.0
@@ -511,7 +488,6 @@ those changes.
 
 * New options: `irreversible-only`, `end-block`.
 
-
 ## Release 1.2
 
 This release supports nodeos versions 1.8 ans 2.0, and not compatible with
@@ -526,7 +502,6 @@ nodeos-1.7.
   `skip-traces`.
 
 * Bugfixes and improvements.
-
 
 ## Release 1.3
 
@@ -643,10 +618,6 @@ is a list of software projects and services using the software.
 
 * [Docker file provided by EOS
   Tribe](https://github.com/EOSTribe/eos-chronicle-docker)
-
-
-
-
 
 # Source code, license and copyright
 
