@@ -1,9 +1,6 @@
-[![Actions Status: build](https://github.com/EOSChronicleProject/eos-chronicle/workflows/build/badge.svg)](https://github.com/EOSChronicleProject/eos-chronicle/actions/workflows/build.yml/badge.svg)
-
 # FIO Chronicle Project
 
-FIO.Chronicle is a fork of the EOSChronicle project which is a software component designed to process the history of
-an [Antelope](https://github.com/AntelopeIO/leap) (formely EOSIO) blockchain.
+FIO.Chronicle is a software application designed to process the history of the [FIO](https://github.com/fioprotocol/fio) blockchain and is a fork of the [EOSChronicle](https://github.com/EOSChronicleProject/eos-chronicle) project.
 
 # chronicle-receiver
 
