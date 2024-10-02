@@ -2,6 +2,20 @@
 
 FIO.Chronicle is a software application designed to process the history of the [FIO](https://github.com/fioprotocol/fio) blockchain and is a fork of the [EOSChronicle](https://github.com/EOSChronicleProject/eos-chronicle) project.
 
+# FIO Protocol
+The Foundation for Interwallet Operability (FIO) or, in short, the FIO Protocol, is an open-source project based on EOSIO 1.8+.
+
+* For information on FIO Protocol, visit [FIO](https://fio.net).
+* For information on the FIO Chain, API, and SDKs, including detailed clone, build and deploy instructions, visit [FIO Protocol Developer Hub](https://dev.fio.net).
+* To get updates on the development roadmap, visit [FIO Improvement Proposals](https://github.com/fioprotocol/fips). Anyone is welcome and encouraged to contribute.
+* To contribute, please review [Contributing to FIO](CONTRIBUTING.md)
+* To join the community, visit [Discord](https://discord.com/invite/pHBmJCc)
+
+## Licenses
+[FIO License](https://github.com/fioprotocol/fio/blob/master/LICENSE)
+
+[FIO.Chronicle License](https://github.com/fioprotocol/fio.chronicle/blob/develop/LICENSE.txt)
+
 # chronicle-receiver
 
 The receiver is designed to work with `state_history_plugin` of
