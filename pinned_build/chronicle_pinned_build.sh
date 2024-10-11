@@ -16,7 +16,7 @@ else
     echo "Currently only supporting Ubuntu based builds. Your architecture is not supported. Proceed at your own risk."
 fi
 
-if [[ $# -eq 0 ] || [ -z "$1" ]]; then
+if [[ $# -eq 0 || -z "$1" ]]; then
    echo "Usage:"
    echo "./pinned_build/chronicle_pinned_build.sh DEPS_DIR BUILD_DIR JOBS"
    echo "  DEPS_DIR: directory where to place build dependencies (same deps as for Mandel 3.1)"
