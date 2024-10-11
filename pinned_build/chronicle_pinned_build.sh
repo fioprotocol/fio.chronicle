@@ -60,6 +60,7 @@ makedir() {
    made="$(mkdir -p $DIR 2>&1 >/dev/null)"
    if [[ $made =~ $perm_error ]]; then
       sudo mkdir -p $DIR;
+      sudo chown ubuntu:ubuntu $DIR
    elif [[ $made -ne 0 ]]; then
       echo "Unable to make directory, $DIR, exiting..."
       exit 1
@@ -76,7 +77,7 @@ try(){
 
 install_clang() {
    CLANG_DIR=$1
-   if [ ! -d "${CLANG_DIR}" ]; then
+   if [[ ! -d "${CLANG_DIR}" ]]; then
       echo "Installing Clang ${CLANG_VER} @ ${CLANG_DIR}"
       makedir ${CLANG_DIR}
       if [[ ${ARCH} = x86_64 ]]; then
@@ -101,7 +102,7 @@ install_clang() {
 
 install_llvm() {
    LLVM_DIR=$1
-   if [ ! -d "${LLVM_DIR}" ]; then
+   if [[ ! -d "${LLVM_DIR}" ]]; then
       echo "Installing LLVM ${LLVM_VER} @ ${LLVM_DIR}"
       makedir ${LLVM_DIR}
       try wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_VER}/llvm-${LLVM_VER}.src.tar.xz
@@ -122,7 +123,7 @@ install_llvm() {
 install_boost() {
    BOOST_DIR=$1
 
-   if [ ! -d "${BOOST_DIR}" ]; then
+   if [[ ! -d "${BOOST_DIR}" ]]; then
       echo "Installing Boost ${BOOST_VER} @ ${BOOST_DIR}"
       try wget https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VER}/source/boost_${BOOST_VER//\./_}.tar.gz
       try tar -xvzf boost_${BOOST_VER//\./_}.tar.gz -C ${DEP_DIR}
