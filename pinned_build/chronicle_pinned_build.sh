@@ -16,14 +16,13 @@ else
     echo "Currently only supporting Ubuntu based builds. Your architecture is not supported. Proceed at your own risk."
 fi
 
-if [ $# -eq 0 ] || [ -z "$1" ]
-   then
-      echo "Usage:"
-      echo "./pinned_build/chronicle_pinned_build.sh DEPS_DIR BUILD_DIR JOBS"
-      echo "  DEPS_DIR: directory where to place build dependencies (same deps as for Mandel 3.1)"
-      echo "  BUILD_DIR: build directory"
-      echo "  JOBS: number of parallel processes"      
-      exit -1
+if [[ $# -eq 0 ] || [ -z "$1" ]]; then
+   echo "Usage:"
+   echo "./pinned_build/chronicle_pinned_build.sh DEPS_DIR BUILD_DIR JOBS"
+   echo "  DEPS_DIR: directory where to place build dependencies (same deps as for Mandel 3.1)"
+   echo "  BUILD_DIR: build directory"
+   echo "  JOBS: number of parallel processes"      
+   exit -1
 fi
 
 DEP_DIR=$1
@@ -35,7 +34,6 @@ LLVM_VER=7.1.0
 ARCH=`uname -m`
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
 START_DIR="$(pwd)"
-
 
 pushdir() {
    DIR=$1
@@ -56,6 +54,18 @@ popdir() {
    fi
 }
 
+perm_error="Permission denied"
+makedir() {
+   DIR=$1
+   made="$(mkdir -p $DIR 2>&1 >/dev/null)"
+   if [[ $made =~ $perm_error ]]; then
+      sudo mkdir -p $DIR;
+   elif [[ $made -ne 0 ]]; then
+      echo "Unable to make directory, $DIR, exiting..."
+      exit 1
+   fi
+}
+
 try(){
    output=$($@)
    res=$?
@@ -68,17 +78,16 @@ install_clang() {
    CLANG_DIR=$1
    if [ ! -d "${CLANG_DIR}" ]; then
       echo "Installing Clang ${CLANG_VER} @ ${CLANG_DIR}"
-      mkdir -p ${CLANG_DIR}
-      if [ ${ARCH} = x86_64 ]; then
+      makedir ${CLANG_DIR}
+      if [[ ${ARCH} = x86_64 ]]; then
          CLANG_FN=clang+llvm-${CLANG_VER}-x86_64-linux-gnu-ubuntu-16.04.tar.xz
-      else 
-	 if [ ${ARCH} = aarch64 ]; then
-            CLANG_FN=clang+llvm-${CLANG_VER}-aarch64-linux-gnu.tar.xz
-	 else
-            echo "Unknown ARCH: $ARCH"
-            exit 1
-	 fi
-      fi
+      elif [[ ${ARCH} = aarch64 ]]; then
+         CLANG_FN=clang+llvm-${CLANG_VER}-aarch64-linux-gnu.tar.xz
+	  else
+         echo "Unknown ARCH: $ARCH"
+         exit 1
+	  fi
+
       try wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${CLANG_VER}/${CLANG_FN}
       try tar -xvf ${CLANG_FN} -C ${CLANG_DIR}
       pushdir ${CLANG_DIR}
@@ -94,7 +103,7 @@ install_llvm() {
    LLVM_DIR=$1
    if [ ! -d "${LLVM_DIR}" ]; then
       echo "Installing LLVM ${LLVM_VER} @ ${LLVM_DIR}"
-      mkdir -p ${LLVM_DIR}
+      makedir ${LLVM_DIR}
       try wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_VER}/llvm-${LLVM_VER}.src.tar.xz
       try tar -xvf llvm-${LLVM_VER}.src.tar.xz
       pushdir "${LLVM_DIR}.src"
