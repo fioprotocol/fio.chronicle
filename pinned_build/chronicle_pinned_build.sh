@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+set -x
 echo "Chronicle Pinned Build"
 
 if [[ "$(uname)" == "Linux" ]]; then
@@ -21,7 +21,7 @@ if [[ $# -eq 0 || -z "$1" ]]; then
    echo "./pinned_build/chronicle_pinned_build.sh DEPS_DIR BUILD_DIR JOBS"
    echo "  DEPS_DIR: directory where to place build dependencies (same deps as for Mandel 3.1)"
    echo "  BUILD_DIR: build directory"
-   echo "  JOBS: number of parallel processes"      
+   echo "  JOBS: number of parallel processes"
    exit -1
 fi
 
@@ -37,8 +37,8 @@ START_DIR="$(pwd)"
 
 pushdir() {
    DIR=$1
-   mkdir -p ${DIR}
-   pushd ${DIR} &> /dev/null
+   #pushd ${DIR} &> /dev/null
+   pushd ${DIR}
 }
 
 popdir() {
@@ -50,7 +50,7 @@ popdir() {
 
    if [[ ${D} != ${EXPECTED} ]]; then
      echo "Directory is not where expected EXPECTED=${EXPECTED} at ${D}"
-     exit 1 
+     exit 1
    fi
 }
 
@@ -84,17 +84,19 @@ install_clang() {
          CLANG_FN=clang+llvm-${CLANG_VER}-x86_64-linux-gnu-ubuntu-16.04.tar.xz
       elif [[ ${ARCH} = aarch64 ]]; then
          CLANG_FN=clang+llvm-${CLANG_VER}-aarch64-linux-gnu.tar.xz
-	  else
+      else
          echo "Unknown ARCH: $ARCH"
          exit 1
-	  fi
+      fi
 
+      pushdir /tmp
       try wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${CLANG_VER}/${CLANG_FN}
-      try tar -xvf ${CLANG_FN} -C ${CLANG_DIR}
+      try tar -xvf ${CLANG_FN}
       pushdir ${CLANG_DIR}
-      mv clang+*/* .
+      mv /tmp/clang+*/* .
+      popdir /tmp
+      rm -rf ${CLANG_FN}
       popdir ${DEP_DIR}
-      rm ${CLANG_FN}
    fi
    export PATH=${CLANG_DIR}/bin:$PATH
    export CLANG_DIR=${CLANG_DIR}
@@ -105,33 +107,38 @@ install_llvm() {
    if [[ ! -d "${LLVM_DIR}" ]]; then
       echo "Installing LLVM ${LLVM_VER} @ ${LLVM_DIR}"
       makedir ${LLVM_DIR}
+      pushdir /tmp
       try wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_VER}/llvm-${LLVM_VER}.src.tar.xz
       try tar -xvf llvm-${LLVM_VER}.src.tar.xz
-      pushdir "${LLVM_DIR}.src"
-      pushdir build
+      pushdir "llvm-${LLVM_VER}.src"
+      makedir build && pushdir build
       try cmake -DCMAKE_TOOLCHAIN_FILE=${SCRIPT_DIR}/chronicle_pinned_toolchain.cmake -DCMAKE_INSTALL_PREFIX=${LLVM_DIR} -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=host -DLLVM_BUILD_TOOLS=Off -DLLVM_ENABLE_RTTI=On -DLLVM_ENABLE_TERMINFO=Off -DCMAKE_EXE_LINKER_FLAGS=-pthread -DCMAKE_SHARED_LINKER_FLAGS=-pthread -DLLVM_ENABLE_PIC=NO ..
-      try make -j${JOBS} 
+      try make -j${JOBS}
       try make -j${JOBS} install
-      popdir "${LLVM_DIR}.src"
-      popdir ${DEP_DIR}
-      rm -rf ${LLVM_DIR}.src 
+      popdir "/tmp/llvm-${LLVM_VER}.src"
+      popdir /tmp
+      rm -rf llvm-${LLVM_DIR}.src
       rm llvm-${LLVM_VER}.src.tar.xz
+      popdir ${DEP_DIR}
    fi
    export LLVM_DIR=${LLVM_DIR}
 }
 
 install_boost() {
    BOOST_DIR=$1
-
    if [[ ! -d "${BOOST_DIR}" ]]; then
       echo "Installing Boost ${BOOST_VER} @ ${BOOST_DIR}"
+      makedir ${BOOST_DIR}
+      pushdir /tmp
       try wget https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VER}/source/boost_${BOOST_VER//\./_}.tar.gz
-      try tar -xvzf boost_${BOOST_VER//\./_}.tar.gz -C ${DEP_DIR}
+      try tar -xvzf boost_${BOOST_VER//\./_}.tar.gz
+      mv boost_${BOOST_VER//\./_}/* ${BOOST_DIR}
       pushdir ${BOOST_DIR}
       try ./bootstrap.sh -with-toolset=clang --prefix=${BOOST_DIR}/bin
       ./b2 toolset=clang cxxflags='-stdlib=libc++ -D__STRICT_ANSI__ -nostdinc++ -I${CLANG_DIR}/include/c++/v1 -D_FORTIFY_SOURCE=2 -fstack-protector-strong -fPIE' linkflags='-stdlib=libc++ -pie' link=static threading=multi --with-iostreams --with-date_time --with-filesystem --with-system --with-program_options --with-chrono --with-test --with-thread -q -j${JOBS} install
-      popdir ${DEP_DIR}
+      popdir /tmp
       rm boost_${BOOST_VER//\./_}.tar.gz
+      popdir ${DEP_DIR}
    fi
    export BOOST_DIR=${BOOST_DIR}
 }
@@ -145,7 +152,7 @@ install_boost ${DEP_DIR}/boost_${BOOST_VER//\./_}
 # go back to the directory where the script starts
 popdir ${START_DIR}
 
-pushdir ${BUILD_DIR}
+makedir ${BUILD_DIR} && pushdir ${BUILD_DIR}
 
 # build Chronicle
 echo "Building Chronicle"
@@ -153,5 +160,11 @@ try cmake -DCMAKE_TOOLCHAIN_FILE=${SCRIPT_DIR}/chronicle_pinned_toolchain.cmake 
 
 try make -j${JOBS}
 try cpack
+
+makedir /opt/fio-chronicle
+cp chronicle-receiver /opt/fio-chronicle
+
+popdir ${START_DIR}
+cp -r testing /opt/fio-chronicle
 
 echo "Chronicle has successfully built and constructed its packages.  You should be able to find the packages at ${BUILD_DIR}."
