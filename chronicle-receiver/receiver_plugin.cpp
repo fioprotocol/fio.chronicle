@@ -259,6 +259,7 @@ public:
     stale_check_timer(app().get_io_service())
   {};
 
+//start pr for BD-4683
   shared_ptr<chainbase::database>       db;
   bip::mapped_region                    _dblock_mapped_region;
   chronicle::shmem_lock*                dblock;
