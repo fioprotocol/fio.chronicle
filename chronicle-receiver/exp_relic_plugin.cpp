@@ -29,12 +29,12 @@ using boost::system::error_code;
 static auto _exp_relic_plugin = app().register_plugin<exp_relic_plugin>();
 
 namespace {
-  const char* WS_HOST_OPT = "exp-ws-host";
-  const char* WS_PORT_OPT = "exp-ws-port";
-  const char* WS_PATH_OPT = "exp-ws-path";
-  const char* WS_MAXUNACK_OPT = "exp-ws-max-unack";
-  const char* WS_MAXQUEUE_OPT = "exp-ws-max-queue";
-  const char* WS_BINHDR = "exp-ws-bin-header";
+  const char* RELIC_HOST_OPT = "exp-relic-host";
+  const char* RELIC_PORT_OPT = "exp-relic-port";
+  const char* RELIC_PATH_OPT = "exp-relic-path";
+  const char* RELIC_MAXUNACK_OPT = "exp-relic-max-unack";
+  const char* RELIC_MAXQUEUE_OPT = "exp-reic-max-queue";
+  const char* RELIC_BINHDR = "exp-relic-bin-header";
 }
 
 class exp_relic_plugin_impl : std::enable_shared_from_this<exp_relic_plugin_impl> {
@@ -56,16 +56,16 @@ public:
 
   chronicle::channels::interactive_requests::channel_type&          _interactive_requests_chan;
 
-  string ws_host;
-  string ws_port;
-  string ws_path;
+  string relic_host;
+  string relic_port;
+  string relic_path;
   bool use_bin_headers;
   uint32_t maxunack;
 
   //using wstream = boost::beast::websocket::stream<boost::asio::ip::tcp::socket>;
  // std::shared_ptr<wstream> ws;
-  const int ws_priority = 60;
-  const int ws_order = 1000;
+  const int relic_priority = 60;
+  const int relic_order = 1000;
 
   rapidjson::StringBuffer json_buffer;
   rapidjson::Writer<rapidjson::StringBuffer> json_writer;
@@ -233,7 +233,7 @@ public:
       }
 
       mytimer->expires_from_now(boost::posix_time::milliseconds(pause_time_msec));
-      mytimer->async_wait(app().executor().get_priority_queue().wrap(ws_priority, ws_order, [this](const error_code ec) {
+      mytimer->async_wait(app().executor().get_priority_queue().wrap(relic_priority, relic_order, [this](const error_code ec) {
             async_send_events();
           }));
     }
@@ -374,14 +374,14 @@ exp_relic_plugin::~exp_relic_plugin(){
 
 void exp_relic_plugin::set_program_options( options_description& cli, options_description& cfg ) {
   cfg.add_options()
-    (WS_HOST_OPT, bpo::value<string>(), "Websocket server host to connect to")
-    (WS_PORT_OPT, bpo::value<string>(), "Websocket server port to connect to")
-    (WS_PATH_OPT, bpo::value<string>()->default_value("/"), "Websocket server URL path")
-    (WS_MAXUNACK_OPT, bpo::value<uint32_t>()->default_value(1000),
+    (RELIC_HOST_OPT, bpo::value<string>(), "Websocket server host to connect to")
+    (RELIC_PORT_OPT, bpo::value<string>(), "Websocket server port to connect to")
+    (RELIC_PATH_OPT, bpo::value<string>()->default_value("/"), "Websocket server URL path")
+    (RELIC_MAXUNACK_OPT, bpo::value<uint32_t>()->default_value(1000),
      "Receiver will pause at so many unacknowledged blocks")
-    (WS_MAXQUEUE_OPT, bpo::value<uint32_t>()->default_value(10000),
+    (RELIC_MAXQUEUE_OPT, bpo::value<uint32_t>()->default_value(10000),
      "Receiver will pause if outbound queue exceeds this limit")
-    (WS_BINHDR, bpo::value<bool>()->default_value(false),
+    (RELIC_BINHDR, bpo::value<bool>()->default_value(false),
      "Start export messages with 32-bit native msgtype,msgopt")
     ;
 }
@@ -396,32 +396,32 @@ void exp_relic_plugin::plugin_initialize( const variables_map& options ) {
     donot_start_receiver_before(this, "exp_relic_plugin");
 
     bool opt_missing = false;
-    if( options.count(WS_HOST_OPT) != 1 ) {
-      elog("${o} not specified, as required by exp_relic_plugin", ("o",WS_HOST_OPT));
+    if( options.count(RELIC_HOST_OPT) != 1 ) {
+      elog("${o} not specified, as required by exp_relic_plugin", ("o",RELIC_HOST_OPT));
       opt_missing = true;
     }
-    if( options.count(WS_PORT_OPT) != 1 ) {
-      elog("${o} not specified, as required by exp_relic_plugin", ("o",WS_PORT_OPT));
+    if( options.count(RELIC_PORT_OPT) != 1 ) {
+      elog("${o} not specified, as required by exp_relic_plugin", ("o",RELIC_PORT_OPT));
       opt_missing = true;
     }
 
     if( opt_missing )
       throw std::runtime_error("Mandatory option missing");
 
-    my->ws_host = options.at(WS_HOST_OPT).as<string>();
-    my->ws_port = options.at(WS_PORT_OPT).as<string>();
-    my->ws_path = options.at(WS_PATH_OPT).as<string>();
+    my->relic_host = options.at(RELIC_HOST_OPT).as<string>();
+    my->relic_port = options.at(RELIC_PORT_OPT).as<string>();
+    my->relic_path = options.at(RELIC_PATH_OPT).as<string>();
 
-    my->maxunack = options.at(WS_MAXUNACK_OPT).as<uint32_t>();
+    my->maxunack = options.at(RELIC_MAXUNACK_OPT).as<uint32_t>();
     if( my->maxunack == 0 )
       throw std::runtime_error("Maximum unacked blocks must be a positive integer");
 
-    my->queue_hwm = options.at(WS_MAXQUEUE_OPT).as<uint32_t>();
+    my->queue_hwm = options.at(RELIC_MAXQUEUE_OPT).as<uint32_t>();
     if( my->queue_hwm == 0 )
       throw std::runtime_error("Maximum queue size must be a positive integer");
     my->queue_lwm = my->queue_hwm * 3 / 4;
 
-    my->use_bin_headers = options.at(WS_BINHDR).as<bool>();
+    my->use_bin_headers = options.at(RELIC_BINHDR).as<bool>();
 
     my->init();
     ilog("Initialized exp_relic_plugin");

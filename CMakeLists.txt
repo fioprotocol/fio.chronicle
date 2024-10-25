@@ -41,6 +41,7 @@ add_executable(${CHRONICLE_RECEIVER_NAME}
 if(CHRONICLE_JSON_EXPORT)
   target_sources(${CHRONICLE_RECEIVER_NAME} PUBLIC
     chronicle-receiver/decoder_plugin.cpp
+    chronicle-receiver/exp_relic_plugin.cpp
     chronicle-receiver/exp_ws_plugin.cpp
     )
 endif()
