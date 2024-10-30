@@ -17,6 +17,7 @@
 #include "rapidjson/reader.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
+#include <libpq-fe.h>
 
 
 #include <fc/log/logger.hpp>
@@ -81,12 +82,27 @@ public:
   uint32_t pause_time_msec = 0;
   uint32_t msg_report_counter = 1000;
 
+  PGconn *conn;
+
   exp_relic_plugin_impl() :
     _interactive_requests_chan(app().get_channel<chronicle::channels::interactive_requests>())
   {};
 
   void init() {
     mytimer = std::make_shared<boost::asio::deadline_timer>(app().get_io_service());
+
+    //connect to postgres relic db
+    const char *conninfo = "dbname=relicdb user=chronicle_user password=relicchronicle1@0@2 host=localhost port=5432";
+
+    conn = PQconnectdb(conninfo);
+
+    if (PQstatus(conn) != CONNECTION_OK) {
+        ilog("failed to connect to relic database!");
+        PQfinish(conn);
+        return;
+    }
+
+    ilog ("connected to relic db!!");
 
     if (use_bin_headers) {
       _js_forks_subscription =
@@ -250,9 +266,6 @@ public:
       async_queue.pop();
       async_out_buffer = boost::asio::const_buffer(async_msg->data(), async_msg->size());
 
-
-     //  ilog("EDEDEDEDEDEDED processing event!!  ${b}", ("b",string((const char*)async_msg->data(), async_msg->size())));
-
       rapidjson::Document document;
       document.Parse((const char*)async_msg->data(),async_msg->size());
 
@@ -273,7 +286,6 @@ public:
         document.Accept(writer);
         ilog (buffer.GetString());
 
-
         const string msgtype = document["msgtype"].GetString();
         const rapidjson::Value& dataj = document["data"];
         if (
@@ -281,15 +293,29 @@ public:
             dataj["block_num"].IsString()
     
         ) {
-
           uint32_t bnum =static_cast<uint32_t>(std::stoul( document["data"]["block_num"].GetString()));
+          string bnums =document["data"]["block_num"].GetString();
           if (msgtype == "BLOCK_COMPLETED"){
           //ack block on BLOCK_COMPLETED
+          //insert into relic db
+          //INSERT INTO blocks values (1,'2024-10-25T19:40:38.000');
+           string btimestamp =document["data"]["block_timestamp"].GetString();
+            string insertQuery = "INSERT INTO blocks VALUES ("+bnums+",'"+btimestamp+"')";
+            PGresult *res = PQexec(conn, insertQuery.c_str());
+            if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+              ilog("insert into blocks failed ");
+                PQclear(res);
+                PQfinish(conn);
+                return;
+            }
+
+            PQclear(res);
           ack_block(bnum -1);
           }
           else if(msgtype == "FORK" ) {
                 //TODO:  rollback code goes here!!!!
                 ack_block(bnum - 1);
+                ilog("EDEDEDEDEDED ack block called ");
           }
           else { //TODO check if the event is in the list of events handled by RELIC then process as per relic{
             ilog("UnAcknowledged EVENT ${e}",("e",msgtype));
