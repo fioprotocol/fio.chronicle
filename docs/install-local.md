@@ -18,7 +18,7 @@ sudo mkdir -p /opt/fio-chronicle && sudo cp -r build/* /opt/fio-chronicle
 
 ## Configure the FIO blockchain to capture history
 
-### FIO
+### FIO Nodeos
 As this is a localnet deployment of FIO, the fio.devtools framework will be used and everything should be set up by default. However, for clarity it is important to understand the fio.devtools localnet configuration as well as the fio.devtools history node configuration.
 
 The localnet 3-node default blockchain as well as the state history node is started using the fio.devtools start script, start.sh. The 3-node blockchain is configured to process blocks on ports 9876, 9877, and 9878 and have chain api plugin ports of 8879, 8889 and 8890.
@@ -44,7 +44,7 @@ cp scripts/launch/history/container/etc/config.ini-statehistory scripts/launch/h
 
 This will be used below when starting the history node
 
-### EOS-Chronicle
+### FIO Chronicle
 Create the config and the data directory and initialize the fio-chronicle config.ini. The config.ini connection options are as follows;
 * host: the nodeos state history host (upstream connection to fio nodeos state history api endpoint)
 * port: the nodeos state history api port (upstream connection to fio nodeos state history api endpoint port)
@@ -65,7 +65,8 @@ exp-ws-bin-header = false
 EOT
 ```
 
-## Run the fio-chronicle-webSocket server ecosystem
+## Run the fio-chronicle server ecosystem
+
 ### Start fio-nodeos
 ```shell
 # Build contracts (optional)
@@ -89,7 +90,7 @@ P2P Nodeos Port [8889]:<Enter>
 Choose(#):2<Enter>
 ```
 
-### Start chronicle test web socket server
+### Start fio-chronicle test web socket server
 Note that this web socket server represents a downstream server showing json formatted state history data processed by EOS-Chronicle and is for test purposes only
 
 ```shell
@@ -103,7 +104,7 @@ sudo apt install cpanminus libjson-xs-perl libjson-perl
 sudo cpanm Net::WebSocket::Server
 ```
 
-## Start eos-chronicle
+## Start the fio-chronicle-receiver
 ```shell
 /opt/fio-chronicle/chronicle-receiver --config-dir=/opt/fio-chronicle/config --data-dir=/opt/fio-chronicle/data --end-block=846511
 ```
