@@ -25,7 +25,7 @@ if [[ $# -eq 0 || -z "$1" ]]; then
    exit -1
 fi
 
-DEP_DIR=$1
+DEPS_DIR=$1
 BUILD_DIR=$2
 JOBS=$3
 CLANG_VER=11.0.1
@@ -96,7 +96,7 @@ install_clang() {
       mv /tmp/clang+*/* .
       popdir /tmp
       rm -rf ${CLANG_FN}
-      popdir ${DEP_DIR}
+      popdir ${DEPS_DIR}
    fi
    export PATH=${CLANG_DIR}/bin:$PATH
    export CLANG_DIR=${CLANG_DIR}
@@ -119,7 +119,7 @@ install_llvm() {
       popdir /tmp
       rm -rf llvm-${LLVM_DIR}.src
       rm llvm-${LLVM_VER}.src.tar.xz
-      popdir ${DEP_DIR}
+      popdir ${DEPS_DIR}
    fi
    export LLVM_DIR=${LLVM_DIR}
 }
@@ -138,16 +138,16 @@ install_boost() {
       ./b2 toolset=clang cxxflags='-stdlib=libc++ -D__STRICT_ANSI__ -nostdinc++ -I${CLANG_DIR}/include/c++/v1 -D_FORTIFY_SOURCE=2 -fstack-protector-strong -fPIE' linkflags='-stdlib=libc++ -pie' link=static threading=multi --with-iostreams --with-date_time --with-filesystem --with-system --with-program_options --with-chrono --with-test --with-thread -q -j${JOBS} install
       popdir /tmp
       rm boost_${BOOST_VER//\./_}.tar.gz
-      popdir ${DEP_DIR}
+      popdir ${DEPS_DIR}
    fi
    export BOOST_DIR=${BOOST_DIR}
 }
 
-pushdir ${DEP_DIR}
+pushdir ${DEPS_DIR}
 
-install_clang ${DEP_DIR}/clang-${CLANG_VER}
-install_llvm ${DEP_DIR}/llvm-${LLVM_VER}
-install_boost ${DEP_DIR}/boost_${BOOST_VER//\./_}
+install_clang ${DEPS_DIR}/clang-${CLANG_VER}
+install_llvm ${DEPS_DIR}/llvm-${LLVM_VER}
+install_boost ${DEPS_DIR}/boost_${BOOST_VER//\./_}
 
 # go back to the directory where the script starts
 popdir ${START_DIR}
