@@ -32,7 +32,7 @@ CLANG_VER=11.0.1
 BOOST_VER=1.80.0
 LLVM_VER=7.1.0
 
-SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+SCRIPTS_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
 
 # Ensure we're in the repo root and not inside of scripts
 cd $( dirname "${BASH_SOURCE[0]}" )/..
@@ -40,15 +40,15 @@ cd $( dirname "${BASH_SOURCE[0]}" )/..
 HOME_DIR="$(pwd)"
 BUILD_DIR=${HOME_DIR}/build
 
-. ${SCRIPT_DIR}/build_utils.sh
+. ${SCRIPTS_DIR}/build_utils.sh
 
-. ${SCRIPT_DIR}/build_deps.sh ${DEPS_DIR}
+. ${SCRIPTS_DIR}/build_deps.sh ${DEPS_DIR}
 
 makedir ${BUILD_DIR} && pushdir ${BUILD_DIR}
 
 # build Chronicle
 echo "Building Chronicle"
-try cmake -DCMAKE_TOOLCHAIN_FILE=${SCRIPT_DIR}/pinned_toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${LLVM_DIR}/lib/cmake -DCMAKE_PREFIX_PATH=${BOOST_DIR}/bin ${MORE_CMAKE_FLAGS} ${SCRIPT_DIR}/..
+try cmake -DCMAKE_TOOLCHAIN_FILE=${SCRIPTS_DIR}/pinned_toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${LLVM_DIR}/lib/cmake -DCMAKE_PREFIX_PATH=${BOOST_DIR}/bin ${MORE_CMAKE_FLAGS} ${SCRIPTS_DIR}/..
 
 try make -j${JOBS}
 try cpack

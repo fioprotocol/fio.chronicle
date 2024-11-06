@@ -10,10 +10,17 @@ CLANG_VER=11.0.1
 BOOST_VER=1.80.0
 LLVM_VER=7.1.0
 
-SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
-START_DIR="$(pwd)"
+SCRIPTS_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
 
-. build_utils.sh
+# Ensure we're in the repo root and not inside of scripts
+cd $( dirname "${BASH_SOURCE[0]}" )/..
+
+HOME_DIR="$(pwd)"
+BUILD_DIR=${HOME_DIR}/build
+
+. ${SCRIPTS_DIR}/build_utils.sh
+
+sudo ${SCRIPTS_DIR}/install_deps.sh
 
 install_clang() {
   CLANG_DIR=$1
@@ -52,7 +59,7 @@ install_llvm() {
     try tar -xvf llvm-${LLVM_VER}.src.tar.xz
     pushdir "llvm-${LLVM_VER}.src"
     makedir build && pushdir build
-    try cmake -DCMAKE_TOOLCHAIN_FILE=${SCRIPT_DIR}/pinned_toolchain.cmake -DCMAKE_INSTALL_PREFIX=${LLVM_DIR} -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=host -DLLVM_BUILD_TOOLS=Off -DLLVM_ENABLE_RTTI=On -DLLVM_ENABLE_TERMINFO=Off -DCMAKE_EXE_LINKER_FLAGS=-pthread -DCMAKE_SHARED_LINKER_FLAGS=-pthread -DLLVM_ENABLE_PIC=NO ..
+    try cmake -DCMAKE_TOOLCHAIN_FILE=${SCRIPTS_DIR}/pinned_toolchain.cmake -DCMAKE_INSTALL_PREFIX=${LLVM_DIR} -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=host -DLLVM_BUILD_TOOLS=Off -DLLVM_ENABLE_RTTI=On -DLLVM_ENABLE_TERMINFO=Off -DCMAKE_EXE_LINKER_FLAGS=-pthread -DCMAKE_SHARED_LINKER_FLAGS=-pthread -DLLVM_ENABLE_PIC=NO ..
     try make -j${JOBS}
     try make -j${JOBS} install
     popdir "/tmp/llvm-${LLVM_VER}.src"
