@@ -87,7 +87,7 @@ endforeach()
 
 
 ## Installables
-install(TARGETS ${CHRONICLE_RECEIVER_NAME} RUNTIME DESTINATION sbin)
+install(TARGETS ${CHRONICLE_RECEIVER_NAME} RUNTIME DESTINATION bin)
 install(FILES systemd/chronicle_receiver\@.service DESTINATION share)
 
 include(package.cmake)

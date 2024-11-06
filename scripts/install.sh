@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -x
+echo "Chronicle Install"
+
+if [[ "$(uname)" == "Linux" ]]; then
+   if [[ -e /etc/os-release ]]; then
+      # obtain NAME and other information
+      . /etc/os-release
+      if [[ ${NAME} != "Ubuntu" ]]; then
+         echo "Currently only supporting Ubuntu based builds. Proceed at your own risk."
+      fi
+   else
+       echo "Currently only supporting Ubuntu based builds. /etc/os-release not found. Your Linux distribution is not supported. Proceed at your own risk."
+   fi
+else
+    echo "Currently only supporting Ubuntu based builds. Your architecture is not supported. Proceed at your own risk."
+fi
+
+# Get scripts dir
+SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+
+# Ensure we're in the repo root and not inside of scripts
+cd $( dirname "${BASH_SOURCE[0]}" )/..
+
+BASE_DIR=`pwd`
+BUILD_DIR=${BASE_DIR}/build
+
+. ${SCRIPT_DIR}/build_utils.sh
+
+makedir /opt/fio-chronicle
+cp ${BUILD_DIR}/chronicle-receiver /opt/fio-chronicle
+
+cp -r ${BASE_DIR}/testing /opt/fio-chronicle
+
+echo "Chronicle has been successfully installed. You should be able to find the packages at ${BUILD_DIR}."

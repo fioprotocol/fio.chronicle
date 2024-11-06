@@ -128,7 +128,7 @@ EOT
 
 # Start the receiver to check that everything is working as
 # expected. Use Ctrl-C to stop it.
-/usr/local/sbin/chronicle-receiver \
+/usr/local/bin/chronicle-receiver \
   --config-dir=/srv/memento_wax1/chronicle-config --data-dir=/srv/memento_wax1/chronicle-data
 
 # install systemd unit file
@@ -139,7 +139,7 @@ systemctl daemon-reload
 # in the state history archive. See the Chronicle Tutorial for more
 # details. You may point it to some other state history source during
 # the initialization. Here we launch it in scan-noexport mode for faster initialization.
-/usr/local/sbin/chronicle-receiver --config-dir=/srv/memento_wax1/chronicle-config \
+/usr/local/bin/chronicle-receiver --config-dir=/srv/memento_wax1/chronicle-config \
  --data-dir=/srv/memento_wax1/chronicle-data \
  --host=my.ship.host.domain.com --port=8080 \
  --start-block=186332760 --mode=scan-noexport --end-block=186332800
