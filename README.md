@@ -38,57 +38,56 @@ limitations under the License.
 
 See the [release notes](https://github.com/fioprotocol/fio.chronicle/blob/develop/docs/releases.md) for information regarding FIO/EOS Chronicle releases.
 
-## Ecosystem links
+## Relevant Documentation (Tutorial, Chat, Clients, Uses)
 
 * [Chronicle Telegram chat](https://t.me/+TMWWcV1gBxQiqIkm)
 
-* [Chronicle
-  tutorial](https://github.com/EOSChronicleProject/chronicle-tutorial)
-  explains the nodeos and Chronicle server installation in detail.
+* [Chronicle Tutorial](https://github.com/EOSChronicleProject/chronicle-tutorial) explains the nodeos and Chronicle server installation in detail.
 
-* [chronicle-consumer-npm](https://github.com/EOSChronicleProject/chronicle-consumer-npm)
-  is a Node.js module that consumer processes can be based on.
+* [Chronicle Consumer Module](https://github.com/EOSChronicleProject/chronicle-consumer-npm) is a Node.js module that consumer processes can be based on.
 
-* [chronicle-consumer-npm
-  examples](https://github.com/EOSChronicleProject/chronicle-consumer-npm-examples)
-  is a number of examples using the Node.js module.
+* [Chronicle Consumer Module Examples](https://github.com/EOSChronicleProject/chronicle-consumer-npm-examples) is a number of examples using the Node.js module.
 
-* [Awesome
-Chronicle](https://github.com/EOSChronicleProject/awesome-chronicle)
-is a list of software projects and services using the software.
+* [Awesome Chronicle](https://github.com/EOSChronicleProject/awesome-chronicle) is a list of software projects and services using the software.
 
-* [Docker file provided by EOS
-  Tribe](https://github.com/EOSTribe/eos-chronicle-docker)
+* [Docker File](https://github.com/EOSTribe/eos-chronicle-docker) provided by EOS Tribe
 
 ### Build Instructions
 
-Minimum requirements: Cmake 3.11, Boost 1.67, GCC 8.3.0.
+#### Build
+Minimum build requirements: Cmake 3.11, GCC 8.3.0
 
-The pinned build script will produce a Debian package and a binary
-archive.
+Dependencies: Boost version 1.80.0, Clang version 11.0.1, and LLVM, version 7.1.0.
 
-See the [FIO.Chronicle Install](https://github.com/fioprotocol/fio.chronicle/blob/develop/docs/install-local.md) document to install and deploy fio.chronicle
+The build and install scripts are located in ./scripts directory. The build script takes one argument, the directory where to find or install the build dependencies including Boost, Clang, and LLVM. It is recommended to use a non-system level directory such as '/opt'. Note that any future builds, if given the same directory, will reuse those build dependencies.
 
-### Nodeos Configuration
+To build fio.chronicle, execute the following command; `./scripts/build.sh <COTS Product Dir>` where COTS Product Director is/will be where 
 
-In order for Chronicle to function properly, both `trace-history` and
-`chain-state-history` need to be enabled. Also if contract console
-output needs to be present in Chronicle output,
-`trace-history-debug-mode` needs to be enabled too. The state history
-endpoint address and port needs to be reachable from the host where
-Chronicle receiver is running.
+#### Install
+To install fio.chronicle, execute the following command; `./scripts/install.sh`
 
-Example `config.ini` for `nodeos`:
-
+Note: this will install the Fio.Chronicle executable in /opt/fio.chronicle. If desired, you may install the executable to '/usr/local/bin' by doing the following;
+```shell
+cd build
+sudo make install
 ```
-contracts-console = true
-validation-mode = light
-plugin = eosio::state_history_plugin
-trace-history = true
-chain-state-history = true
-trace-history-debug-mode = true
-state-history-endpoint = 0.0.0.0:8080
-```
+
+#### Local Build and Install
+See [FIO.Chronicle Local Install](https://github.com/fioprotocol/fio.chronicle/blob/develop/docs/install-local.md) document to install and deploy fio.chronicle locally.
+
+### FIO Nodeos Configuration
+FIO.Chronicle depends on fio-nodeos processing state history; to configure fio-nodeos to do so either pass the appropriate parameters on the command line or update the fio-nodeos configuration, located in '/etc/fio/nodeos/config.ini', to have the following attributers and values;
+* contracts-console = true
+* validation-mode = light
+* trace-history = true
+* chain-state-history = true
+* plugin = eosio::state_history_plugin
+* state-history-endpoint = 0.0.0.0:8080
+
+In addition, the following attributes may be set;
+* trace-history-debug-mode = true
+
+Note that the state-history-endpoint address and port need to be reachable by the FIO.Chronicle receiver, chronicle-receiver.
 
 ### FIO.Chronicle Configuration
 
