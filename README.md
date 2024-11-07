@@ -57,11 +57,14 @@ See the [release notes](https://github.com/fioprotocol/fio.chronicle/blob/develo
 #### Build
 Minimum build requirements: Cmake 3.11, GCC 8.3.0
 
-Dependencies: Boost version 1.80.0, Clang version 11.0.1, and LLVM, version 7.1.0.
+Dependencies:
+* Boost, version 1.80.0
+* Clang, version 11.0.1
+* LLVM, version 7.1.0.
 
 The build and install scripts are located in ./scripts directory. The build script takes one argument, the directory where to find or install the build dependencies including Boost, Clang, and LLVM. It is recommended to use a non-system level directory such as '/opt'. Note that any future builds, if given the same directory, will reuse those build dependencies.
 
-To build fio.chronicle, execute the following command; `./scripts/build.sh <COTS Product Dir>` where COTS Product Director is/will be where 
+For example, to build fio.chronicle, execute the following command; `./scripts/build.sh /opt`
 
 #### Install
 To install fio.chronicle, execute the following command; `./scripts/install.sh`
@@ -74,6 +77,30 @@ sudo make install
 
 #### Local Build and Install
 See [FIO.Chronicle Local Install](https://github.com/fioprotocol/fio.chronicle/blob/develop/docs/install-local.md) document to install and deploy fio.chronicle locally.
+
+### FIO.Chronicle Configuration
+Similarly to `nodeos`, `chronicle-receiver` needs a configuration directory with `config.ini` in it, and a data directory where it stores its internal state.
+
+See the [Chronicle Tutorial](https://github.com/EOSChronicleProject/chronicle-tutorial) for a more detailed and complete example.
+
+Here's a minimal configuration for the receiver using Websocket exporter. It connects to `nodeos` process running `state_history_plugin` at `localhost:8080` and exports the data to a websocket server at `localhost:8800`. In a production environment, hosts may be different machines in the network.
+
+The receiver would stop immediately if the websocket server is not responding. For further tests, you need a consumer server ready.
+
+The Perl script `testing/chronicle-ws-dumper.pl` can be used as a test websocket server that dumps the input to standard output.
+
+```
+mkdir -p /srv/memento_wax1/chronicle-config
+cat >/srv/memento_wax1/chronicle-config/config.ini <<'EOT'
+host = 127.0.0.1
+port = 8080
+mode = scan
+plugin = exp_ws_plugin
+exp-ws-host = 127.0.0.1
+exp-ws-port = 8800
+exp-ws-bin-header = true
+EOT
+```
 
 ### FIO Nodeos Configuration
 FIO.Chronicle depends on fio-nodeos processing state history; to configure fio-nodeos to do so either pass the appropriate parameters on the command line or update the fio-nodeos configuration, located in '/etc/fio/nodeos/config.ini', to have the following attributers and values;
@@ -89,42 +116,8 @@ In addition, the following attributes may be set;
 
 Note that the state-history-endpoint address and port need to be reachable by the FIO.Chronicle receiver, chronicle-receiver.
 
-### FIO.Chronicle Configuration
-
-Similarly to `nodeos`, `chronicle-receiver` needs a configuration
-directory with `config.ini` in it, and a data directory where it stores
-its internal state.
-
-See the [Chronicle
-tutorial](https://github.com/EOSChronicleProject/chronicle-tutorial)
-for a more detailed and complete example.
-
-Here's a minimal configuration for the receiver using Websocket
-exporter. It connects to `nodeos` process running `state_history_plugin`
-at `localhost:8080` and exports the data to a websocket server at
-`localhost:8800`. In a production environment, hosts may be different
-machines in the network.
-
-The receiver would stop immediately if the websocket server is not
-responding. For further tests, you need a consumer server ready.
-
-The Perl script `testing/chronicle-ws-dumper.pl` can be used as a test
-websocket server that dumps the input to standard output.
-
-```
-mkdir -p /srv/memento_wax1/chronicle-config
-cat >/srv/memento_wax1/chronicle-config/config.ini <<'EOT'
-host = 127.0.0.1
-port = 8080
-mode = scan
-plugin = exp_ws_plugin
-exp-ws-host = 127.0.0.1
-exp-ws-port = 8800
-exp-ws-bin-header = true
-EOT
-
 ### FIO.Chronicle Execution
-
+```
 # Start the receiver to check that everything is working as
 # expected. Use Ctrl-C to stop it.
 /usr/local/bin/chronicle-receiver \
