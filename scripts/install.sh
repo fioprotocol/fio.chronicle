@@ -13,7 +13,7 @@ if [[ "$(uname)" == "Linux" ]]; then
        echo "Currently only supporting Ubuntu based builds. /etc/os-release not found. Your Linux distribution is not supported. Proceed at your own risk."
    fi
 else
-    echo "Currently only supporting Ubuntu based builds. Your architecture is not supported. Proceed at your own risk."
+   echo "Currently only supporting Ubuntu based builds. Your architecture is not supported. Proceed at your own risk."
 fi
 
 # Get scripts dir
@@ -24,12 +24,18 @@ cd $( dirname "${BASH_SOURCE[0]}" )/..
 
 HOME_DIR=$(pwd)
 BUILD_DIR=${HOME_DIR}/build
+CONFIG_DIR=${HOME_DIR}/config
 
 . ${SCRIPTS_DIR}/build_utils.sh
 
 makedir /opt/fio-chronicle
+makedir /opt/fio-chronicle
+makedir /opt/fio-chronicle/config
+makedir /opt/fio-chronicle/data
+
 cp ${BUILD_DIR}/chronicle-receiver /opt/fio-chronicle
+cp ${CONFIG_DIR}/config.ini.sample /opt/fio-chronicle/config/config.ini
 
-cp -r ${HOME_DIR}/testing /opt/fio-chronicle
+#cp -r ${HOME_DIR}/testing /opt/fio-chronicle
 
-echo "Chronicle has been successfully installed. You should be able to find the packages at ${BUILD_DIR}."
+echo "Chronicle has been successfully installed to /opt/fio-chronicle."
