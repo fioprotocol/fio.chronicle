@@ -19,13 +19,13 @@ sudo mkdir -p /opt/fio-chronicle && sudo cp -r build/* /opt/fio-chronicle
 ## Configure the FIO blockchain to capture history
 
 ### FIO Nodeos
-As this is a localnet deployment of FIO, the fio.devtools framework will be used and everything should be set up by default. However, for clarity it is important to understand the fio.devtools localnet configuration as well as the fio.devtools history node configuration.
+As this is a localnet deployment of FIO, the fio.devtools framework will be used to set up the runtime environnemnt. However, for clarity it is important to understand the fio.devtools localnet configuration as well as the fio.devtools history node configuration.
 
 The localnet 3-node default blockchain as well as the state history node is started using the fio.devtools start script, start.sh. The 3-node blockchain is configured to process blocks on ports 9876, 9877, and 9878 and have chain api plugin ports of 8879, 8889 and 8890.
 
 The history node, which is run as a docker container, will connect to the 3-node blockchain described above, ingest blocks and store state history. Its state history api port will be 8080 and any connnections to pull state history will utilize this port.
 
-Refering to this in the EOS Chronicle doc (https://github.com/EOSChronicleProject/eos-chronicle?tab=readme-ov-file#state-history-plugin-in-nodeos) the state history node configuration will have the following attributes/values;
+Refering to this in the EOS Chronicle doc (https://github.com/EOSChronicleProject/eos-chronicle?tab=readme-ov-file#state-history-plugin-in-nodeos) the state history node configuration should have the following attributes and values;
 
 ```shell
 contracts-console = true
@@ -37,12 +37,10 @@ trace-history-debug-mode = true
 state-history-endpoint = 0.0.0.0:8080
 ```
 
-To expedite this update, the fio.devtools start script has been updated to copy the appropriate history node configuration. For example when starting a state history docker node, the script performs the following;
+On startup of the fio.devtools history node, the configuration will be updated to contain the aforementioned attributes as the script performs the following action;
 ```shell
 cp scripts/launch/history/container/etc/config.ini-statehistory scripts/launch/history/container/etc/config.ini
 ```
-
-This will be used below when starting the history node
 
 ### FIO Chronicle
 Create the config and the data directory and initialize the fio-chronicle config.ini. The config.ini connection options are as follows;
