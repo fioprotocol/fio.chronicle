@@ -62,21 +62,29 @@ is a list of software projects and services using the software.
 
 ### Build Instructions
 
-Minimum requirements: Cmake 3.11, Boost 1.67, GCC 8.3.0.
+#### Build
+Minimum requirements: Boost 1.80, Cmake 3.11, Clang 11.0.1, GCC 8.3.0, LLVM 7.1.0
 
-The pinned build script will produce a Debian package and a binary
-archive.
+Dependencies:
+Boost version 1.80.0, Clang version 11.0.1, and LLVM, version 7.1.0 are all dependencies of fio.chronicle. The build script will automatically check for these versions in the provided direction and, if not found, will download, build and install them. This will take approximately 30 minutes, depending on the performance of your build system.
 
-See the [FIO.Chronicle Install](https://github.com/fioprotocol/fio.chronicle/blob/develop/docs/install-local.md) document to install and deploy fio.chronicle
+The build and install scripts are located in ./scripts directory. The build script takes one argument, the directory where to find or install the build products; boost, clang, and llvm. This could be anywhere writable by the ubuntu user, however, '/opt' is recommended. Note that any future builds, if given the same directory location, will reuse the build products.
+
+To build fio.chronicle, execute the following command; `./scripts/build.sh /opt`
+
+This will install any required OS dependencies, build and install the build products boost, clang and llvm if needed, create the build directory and build fio.chronicle
+
+#### Install
+To install fio.chronicle, execute the following command; `./scripts/install.sh`
+
+#### Local Build and Install
+See [FIO.Chronicle Local Install](https://github.com/fioprotocol/fio.chronicle/blob/develop/docs/install-local.md) document to install and deploy fio.chronicle locally.
 
 ### Nodeos Configuration
 
-In order for Chronicle to function properly, both `trace-history` and
-`chain-state-history` need to be enabled. Also if contract console
-output needs to be present in Chronicle output,
-`trace-history-debug-mode` needs to be enabled too. The state history
-endpoint address and port needs to be reachable from the host where
-Chronicle receiver is running.
+In order for Chronicle to function properly, both `trace-history` and `chain-state-history` should be enabled. Also if contract console
+output needs to be present in Chronicle output, `trace-history-debug-mode` should be enabled too. The state history endpoint address
+and port needs to be reachable from the host where Chronicle receiver is running.
 
 Example `config.ini` for `nodeos`:
 
