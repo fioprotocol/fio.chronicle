@@ -137,3 +137,6 @@ Options for `exp_ws_plugin`:
 * `exp-ws-bin-header = true|false` (=`false`) Enable binary header mode
   (message type and options as binary integers, followed by JSON);
 
+* `exp-ws-max-unack = N` (=1000): Receiver will pause at so many unacknowledged blocks;
+
+* `exp-ws-max-queue = N` (=10000): Receiver will pause if outbound queue exceeds this limit.
