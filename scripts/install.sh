@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-set -x
-echo "Chronicle Install"
+
+echo "Installing Fio.Chronicle..."
 
 if [[ "$(uname)" == "Linux" ]]; then
    if [[ -e /etc/os-release ]]; then
