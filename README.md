@@ -105,6 +105,3 @@ cd build
 sudo make install
 ```
 Note that the above command will not install the config.ini. This must be manually.
-
-#### Local Build and Install
-See [FIO.Chronicle Local Install](https://github.com/fioprotocol/fio.chronicle/blob/develop/docs/install-local.md) document to install and deploy fio.chronicle locally.
