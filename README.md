@@ -52,7 +52,7 @@ See the [release notes](https://github.com/fioprotocol/fio.chronicle/blob/develo
 
 * [Docker File](https://github.com/EOSTribe/eos-chronicle-docker) provided by EOS Tribe
 
-### Build Instructions
+### Build and Install Instructions
 Minimum build requirements: Cmake 3.11, GCC 8.3.0
 
 Dependencies:
@@ -60,9 +60,9 @@ Dependencies:
 * Clang, version 11.0.1
 * LLVM, version 7.1.0.
 
-The build and install scripts are located in ./scripts directory. The build script takes one argument, the directory where to find or install the build dependencies including Boost, Clang, and LLVM. It is recommended to use a non-system level directory such as '/opt'. Note that any future builds, if given the same directory, will reuse those build dependencies.
-
 #### Build
+The build script takes one argument, the directory where to find or install the build dependencies including Boost, Clang, and LLVM. It is recommended to use a non-system level directory such as '/opt'. Note that any future builds, if given the same directory, will reuse those build dependencies.
+
 To build fio.chronicle, execute the following command;
 ```shell
 ./scripts/build.sh /opt
@@ -98,7 +98,7 @@ exp-ws-bin-header = false
 It connects to `nodeos` process running `state_history_plugin` at `localhost:8080` and exports the data to a websocket server at `localhost:8800`. In a production environment, hosts may be different machines in the network.
 
 ##### Installation
-To install fio.chronicle along with its config.ini file, to /opt/fio-chronicle, execute the following command;
+To install fio.chronicle along with the default config.ini file, to /opt/fio-chronicle, execute the following command;
 ```shell
 ./scripts/install.sh
 ```
