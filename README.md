@@ -95,7 +95,9 @@ exp-ws-host = 127.0.0.1
 exp-ws-port = 8891
 exp-ws-bin-header = false
 ```
-It connects to `nodeos` process running `state_history_plugin` at `localhost:8080` and exports the data to a websocket server at `localhost:8800`. In a production environment, hosts may be different machines in the network.
+FIO.Chronicle will connect to `nodeos` processing historical data via its `state_history_plugin` at `localhost:8080` and exports the data to a websocket server at `localhost:8800`. In a production environment, hosts may be different machines in the network.
+
+##### Note: the `exp-ws-host` and `exp-ws-port` will be replaced with the RDMS host and port.
 
 ##### Installation
 To install fio.chronicle along with the default config.ini file, to /opt/fio-chronicle, execute the following command;
