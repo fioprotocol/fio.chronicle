@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-set -x
+
+# Debug
+#set -x
 
 pushdir() {
   DIR=$1
-  #pushd ${DIR} &> /dev/null
-  pushd ${DIR}
+  #pushd ${DIR}
+  pushd ${DIR} &> /dev/null
 }
 
 popdir() {

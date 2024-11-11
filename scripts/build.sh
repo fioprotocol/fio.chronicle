@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+echo
 echo "Building Fio.Chronicle..."
 
 if [[ "$(uname)" == "Linux" ]]; then
@@ -19,7 +20,7 @@ fi
 if [[ $# -eq 0 || -z "$1" ]]; then
    echo "Usage:"
    echo "./scripts/build.sh DEPS_DIR"
-   echo "  DEPS_DIR: directory where to place build dependencies (same deps as for Mandel 3.1)"
+   echo "  DEPS_DIR: directory where to place build dependencies (Clang, LLVM, Boost)"
    exit -1
 fi
 
@@ -42,7 +43,9 @@ BUILD_DIR=${HOME_DIR}/build
 
 . ${SCRIPTS_DIR}/build_utils.sh
 
+echo
 . ${SCRIPTS_DIR}/build_deps.sh ${DEPS_DIR}
+echo
 
 makedir ${BUILD_DIR} && pushdir ${BUILD_DIR}
 
@@ -53,4 +56,5 @@ try cmake -DCMAKE_TOOLCHAIN_FILE=${SCRIPTS_DIR}/pinned_toolchain.cmake -DCMAKE_I
 try make -j${JOBS}
 try cpack
 
+echo
 echo "Chronicle has successfully built and constructed its packages.  You should be able to find the packages at ${BUILD_DIR}."

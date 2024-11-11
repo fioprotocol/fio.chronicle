@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -x
+
+# Debug
+#set -x
 
 DEPS_DIR=$1
 
