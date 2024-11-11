@@ -85,7 +85,7 @@ Config.Ini Options;
 * exp-ws-host = \<the websocket server host (the downstream connnection to a web socket server host)\>
 * exp-ws-port = \<the websocket server port (the downstream connnection to a web socket server port)\>
 
-The options specified above would suit a minimal configuration but other configuration options may be found [here](docs/config-options.md). The config.ini would be as follows;
+The options specified above will suit a minimal configuration but other configuration options may be found [here](docs/advanced-config.md). The config.ini is as follows;
 ```shell
 host = 127.0.0.1
 port = 8080
