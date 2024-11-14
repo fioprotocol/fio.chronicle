@@ -52,6 +52,16 @@ See the [release notes](https://github.com/fioprotocol/fio.chronicle/blob/develo
 
 * [Docker File](https://github.com/EOSTribe/eos-chronicle-docker) provided by EOS Tribe
 
+### Cloning the repository
+To clone the FIO.Chronicle repository, execute the command; `git clone --recursive git@github.com:fioprotocol/fio.chronicle.git`
+
+#### Notes
+Perform the following;
+```shell
+cd fio.chronicle
+git checkout feature/bd-4660-buildinstall-updates
+```
+
 ### Build and Install Instructions
 Minimum build requirements: Cmake 3.11, GCC 8.3.0
 
@@ -63,7 +73,7 @@ Dependencies:
 #### Build
 The build script takes one argument, the directory where to find or install the build dependencies including Boost, Clang, and LLVM. It is recommended to use a non-system level directory such as '/opt'. Note that any future builds, if given the same directory, will reuse those build dependencies.
 
-To build fio.chronicle, execute the following command;
+To build fio.chronicle, execute the following commands;
 ```shell
 ./scripts/build.sh /opt
 ```
