@@ -56,5 +56,10 @@ try cmake -DCMAKE_TOOLCHAIN_FILE=${SCRIPTS_DIR}/pinned_toolchain.cmake -DCMAKE_I
 try make -j${JOBS}
 try cpack
 
-echo
-echo "Chronicle has successfully built and constructed its packages.  You should be able to find the packages at ${BUILD_DIR}."
+if [[ ! -e ${BUILD_DIR}/chronicle-receiver ]]; then
+  echo
+  echo "ERROR: FIO.Chronicle has failed to build! Review build output for errors, correct and re-execute build script."
+else
+  echo
+  echo "SUCCESS: FIO.Chronicle has been successfully built."
+fi
