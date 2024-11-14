@@ -28,14 +28,18 @@ CONFIG_DIR=${HOME_DIR}/config
 
 . ${SCRIPTS_DIR}/build_utils.sh
 
-makedir /opt/fio-chronicle
-makedir /opt/fio-chronicle
-makedir /opt/fio-chronicle/config
-makedir /opt/fio-chronicle/data
+if [[ -e ${BUILD_DIR}/chronicle-receiver ]]; then
+  makedir /opt/fio-chronicle
+  makedir /opt/fio-chronicle
+  makedir /opt/fio-chronicle/config
+  makedir /opt/fio-chronicle/data
 
-cp ${BUILD_DIR}/chronicle-receiver /opt/fio-chronicle
-cp ${CONFIG_DIR}/config.ini.sample /opt/fio-chronicle/config/config.ini
+  cp ${BUILD_DIR}/chronicle-receiver /opt/fio-chronicle
+  cp ${CONFIG_DIR}/config.ini.sample /opt/fio-chronicle/config/config.ini
 
-#cp -r ${HOME_DIR}/testing /opt/fio-chronicle
+  #cp -r ${HOME_DIR}/testing /opt/fio-chronicle
 
-echo "Chronicle has been successfully installed to /opt/fio-chronicle."
+  echo "FIO.Chronicle has been successfully installed to /opt/fio-chronicle."
+else
+  echo "ERROR: Unable to install FIO.Chronicle; ${BUILD_DIR}/chronicle-receiver does not exist!"
+fi
