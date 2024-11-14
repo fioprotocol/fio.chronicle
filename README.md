@@ -69,11 +69,19 @@ To build fio.chronicle, execute the following command;
 ```
 
 #### Install
-The installation of Fio.Chronicle has two parts,
-1) configuration
-2) installation
+To install fio.chronicle along with the default config.ini file, to /opt/fio-chronicle, execute the following command;
+```shell
+./scripts/install.sh
+```
 
-##### Configuration
+If desired, you may install the executable to '/usr/local/bin' by doing the following;
+```shell
+cd build
+sudo make install
+```
+Note that the above command will not install the config.ini; to do that, copy the [config.ini.sample](./config/config.ini.sample) to '/opt/fio-chronicle/config/config.ini' and update as desired. See the following configuration overview for more insight into the default configuration as well as how to customize it.
+
+##### Configuration Overview
 The configuration of Fio.Chronicle is designated via options specified on the command-line as well as captured in a config.ini that is read as part of start up. The configuration options include, but are limited to, the following;
 Command-Line Options;
 * --config-dir=\<directory where to find the config.ini\>
@@ -85,7 +93,9 @@ Config.Ini Options;
 * exp-ws-host = \<the websocket server host (the downstream connnection to a web socket server host)\>
 * exp-ws-port = \<the websocket server port (the downstream connnection to a web socket server port)\>
 
-The options specified above will suit a minimal configuration but other configuration options may be found [here](docs/advanced-config.md). The config.ini is as follows;
+For more advanced configuration options review the [Advanced Configuration Options](docs/advanced-config.md).
+
+Based on the confiuration options above, the config.ini would be as follows;
 ```shell
 host = 127.0.0.1
 port = 8080
@@ -95,19 +105,8 @@ exp-ws-host = 127.0.0.1
 exp-ws-port = 8891
 exp-ws-bin-header = false
 ```
-FIO.Chronicle will connect to `nodeos` processing historical data via its `state_history_plugin` at `localhost:8080` and exports the data to a websocket server at `localhost:8800`. In a production environment, hosts may be different machines in the network.
+
+These options will allow FIO.Chronicle to connect to a FIO State History node at `127.0.0.1:8080` (host:port) and exports the data to a websocket server at `127.0.0.1:8800` (exp-ws-host:exp-ws-port).
 
 ##### Note: the `exp-ws-host` and `exp-ws-port` will be replaced with the RDMS host and port.
 
-##### Installation
-To install fio.chronicle along with the default config.ini file, to /opt/fio-chronicle, execute the following command;
-```shell
-./scripts/install.sh
-```
-
-If desired, you may install the executable to '/usr/local/bin' by doing the following;
-```shell
-cd build
-sudo make install
-```
-Note that the above command will not install the config.ini. This must be manually.
