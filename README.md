@@ -1,6 +1,5 @@
 # FIO Chronicle Project
-
-FIO.Chronicle is a software application designed to process the history of the [FIO](https://github.com/fioprotocol/fio) blockchain and is a fork of the [EOSChronicle](https://github.com/EOSChronicleProject/eos-chronicle) project. For more detailed information regarding FIO.Chronicle and its origin, EOSChronicle, see the [overview](https://github.com/fioprotocol/fio.chronicle/blob/develop/docs/overview.md)
+FIO.Chronicle is a software application designed to process the state and trace history of the [FIO](https://github.com/fioprotocol/fio) blockchain and is a fork of the [EOSChronicle](https://github.com/EOSChronicleProject/eos-chronicle) project. For more detailed information regarding FIO.Chronicle and its origin, EOSChronicle, see the [FIO.Chronicle Overview](https://github.com/fioprotocol/fio.chronicle/blob/develop/docs/overview.md).
 
 # FIO Protocol
 The Foundation for Interwallet Operability (FIO) or, in short, the FIO Protocol, is an open-source project based on EOSIO 1.8+.
@@ -92,7 +91,7 @@ sudo make install
 Note that the above command will not install the config.ini; to do that, copy the [config.ini.sample](./config/config.ini.sample) to '/opt/fio-chronicle/config/config.ini' and update as desired. See the following configuration overview for more insight into the default configuration as well as how to customize it.
 
 ##### Configuration Overview
-The configuration of Fio.Chronicle is designated via options specified on the command-line as well as captured in a config.ini that is read as part of start up. The configuration options include, but are limited to, the following;
+The configuration of FIO.Chronicle is designated via options specified on the command-line as well as captured in a config.ini that is read as part of start up. The configuration options include, but are limited to, the following;
 Command-Line Options;
 * --config-dir=\<directory where to find the config.ini\>
 * --data-dir=\<directory where to store data\>
@@ -105,7 +104,7 @@ Config.Ini Options;
 
 For more advanced configuration options review the [Advanced Configuration Options](docs/advanced-config.md).
 
-Based on the confiuration options above, the config.ini would be as follows;
+Based on the configuration options above, the config.ini would be as follows;
 ```shell
 host = 127.0.0.1
 port = 8080
