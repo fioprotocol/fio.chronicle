@@ -7,7 +7,7 @@ The Foundation for Interwallet Operability (FIO) or, in short, the FIO Protocol,
 * For information on FIO Protocol, visit [FIO](https://fio.net).
 * For information on the FIO Chain, API, and SDKs, including detailed clone, build and deploy instructions, visit [FIO Protocol Developer Hub](https://dev.fio.net).
 * To get updates on the development roadmap, visit [FIO Improvement Proposals](https://github.com/fioprotocol/fips). Anyone is welcome and encouraged to contribute.
-* To contribute, please review [Contributing to FIO](CONTRIBUTING.md)
+* To contribute, please review [Contributing to FIO](https://dev.fio.net/docs/contributing-to-fio)
 * To join the community, visit [Discord](https://discord.com/invite/pHBmJCc)
 
 ## Licenses and Copyrights
