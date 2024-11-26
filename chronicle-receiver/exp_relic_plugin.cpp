@@ -6,6 +6,7 @@
 #include "decoder_plugin.hpp"
 #include "receiver_plugin.hpp"
 #include "chronicle_msgtypes.h"
+#include "keyops.hpp"
 
 #include <queue>
 #include <boost/beast/websocket.hpp>
@@ -397,49 +398,7 @@ public:
                  uint64_t feecollected = 0;
                  string responsedata = "NOT YET IMPLEMENTED integrate response into history";
                  //TODO: add response from fio to history node and parse this!!!!
-
-
-                if(actionname ==  "newaccount"){
-                   string insertQuery = "SELECT insupdaccounts("+
-                      bnums+",'"+
-                      actionaccount+"','"+
-                      "UNKNOWN','"+
-                      blocktimestamp+"');";
-                      
-                  ilog("EDEDEDEDEDEDEDED ins accounts ${s}",("s",insertQuery));
-                  PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins accounts result status ${r} ",("r",PQresultStatus(res)));
-                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into accounts failed ");
-                    PQclear(res);
-                    PQfinish(conn);
-                    return;
-                  }
-                  PQclear(res);
-
-                }
-                else if (actionname == "bind2eosio"){
-                  string accountnm = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["account"],ALLOW_EMPTY_VALUES);
-                  string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["client_key"],ALLOW_EMPTY_VALUES);
-                  string insertQuery = "SELECT insupdaccounts("+
-                      bnums+",'"+
-                      accountnm+"','"+
-                      pubkey+"','"+
-                      blocktimestamp+"');";
-                      
-                  ilog("EDEDEDEDEDEDEDED ins accounts ${s}",("s",insertQuery));
-                  PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins transaction result status ${r} ",("r",PQresultStatus(res)));
-                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into accounts failed ");
-                    PQclear(res);
-                    PQfinish(conn);
-                    return;
-                  }
-                  PQclear(res);
-                } //end if action is bind2eosio
-
-                
+  
                 if((iactordinal == 1)&&!(actionname == "onblock")&&!(actionname == "nonce")){
                   //select instransactions(1,'2024-01-01','transid','edacct','edacct','actnm','thistpd',300,'requestd','responsed','ok');
                   string insertQuery = "SELECT instransactions("+
@@ -475,6 +434,44 @@ public:
                   }
 
                   PQclear(res);
+
+                 //do relic fio transaction relating actions.
+               
+                 if ((actionname == "trnsfiopubky")||(actionname == "trnloctoks")){
+                  string payeracct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                 
+                  string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payee_public_key"],ALLOW_EMPTY_VALUES);
+                  string payeeacct = fioio::key_to_account(pubkey);
+                  string TRNSTYPETRANSFER = "transfer";
+                  string TRNSTYPETRANSFERLOCKED = "transfer_locked";
+                  string trnstype = TRNSTYPETRANSFER;
+                  if(actionname == "trnloctoks") {
+                    trnstype = TRNSTYPETRANSFERLOCKED;
+                  }
+                  string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["amount"],ALLOW_EMPTY_VALUES);
+                  ilog("EDEDEDEDEDEDEDED key_to_account account ${s}",("s",payeeacct));
+                  string insertQuery = "SELECT instokentransfers("+
+                       boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      payeracct+"','"+
+                      payeeacct+"',"+
+                      sufamount+",'"+
+                      trnstype +"','"+
+                      +"UNKNOWN','"+
+                      blocktimestamp+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins tokentransfers ${s}",("s",insertQuery));
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins tokentransfers result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into token transfers failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+                } //end if action is trnsfiopubky trnsloctok
+
+
                 } //end action ordinal is 1
                 else if ((iactordinal > 1)&&(fktransactionid > -1)) { //action ordinal >1, and a valid tx 
                   //insert into traces
@@ -503,6 +500,165 @@ public:
                 
 
                 }
+
+
+               if ((actionname == "transfer")&&(receiveraccount == "fio.token")){
+                  string payeracct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["from"],DISALLOW_EMPTY_VALUES);                 
+                  string payeeacct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["to"],DISALLOW_EMPTY_VALUES);
+                  string memo = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["memo"],DISALLOW_EMPTY_VALUES);
+                  string trnstype = "transfer";
+
+                  string FIOFEESTR = "FIO fee";
+                  string FIOTPIDSTR = "Paying TPID from treasury";
+                  string FIOSTAKINGSTR = "Paying Staking Rewards";
+                  string FIOPRODUCERSTR = "Paying producer from treasury";
+                  string FIOFOUNDATIONSTR = "Paying foundation from treasury";
+                  string FIOWRAPPINGSTR = "Token Wrapping Oracle Fee";
+                  string FIOUNWRAPPINGSTR = "Token Unwrapping";
+
+                  string TRNSTYPEBLOCKCHAINFEE = "blockchain_fee";
+                  string TRNSTYPETPIDREWARD = "tpid_reward";
+                  string TRNSTYPESTAKINGREWARD = "staking_reward";
+                  string TRNSTYPEBPREWARD = "bp_reward";
+                  string TRNSTYPEFOUNDATIONREWARD = "foundation_reward";
+                  string TRNSTYPEORACLEFEE = "oracle_fee";
+                  string TRNSTYPEUNWRAP = "unwrap";
+                  
+                  if (memo.find(FIOFEESTR)!= std::string::npos){
+                      trnstype = TRNSTYPEBLOCKCHAINFEE;
+                  }else if (memo.find(FIOTPIDSTR)!= std::string::npos){
+                    trnstype = TRNSTYPETPIDREWARD;
+                  }else if (memo.find(FIOSTAKINGSTR)!= std::string::npos){
+                    trnstype = TRNSTYPESTAKINGREWARD;
+                  }else if (memo.find(FIOPRODUCERSTR)!= std::string::npos){
+                    trnstype = TRNSTYPEBPREWARD;
+                  }else if (memo.find(FIOFOUNDATIONSTR)!= std::string::npos){
+                    trnstype = TRNSTYPEFOUNDATIONREWARD;
+                  }else if (memo.find(FIOWRAPPINGSTR)!= std::string::npos){
+                    trnstype = TRNSTYPEORACLEFEE;
+                  }else if (memo.find(FIOUNWRAPPINGSTR)!= std::string::npos){
+                    trnstype = TRNSTYPEUNWRAP;
+                  } 
+                  string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["quantity"],DISALLOW_EMPTY_VALUES);
+                  sufamount.erase(std::remove(sufamount.begin(), sufamount.end(), '.'), sufamount.end());
+                  string substringToRemove = " FIO";
+                  size_t position = sufamount.find(substringToRemove);
+                  if (position != std::string::npos) {
+                      sufamount.erase(position, substringToRemove.length());
+                  }
+ ilog("EDEDEDEDEDEDEDED key_to_account account ${s}",("s",payeeacct));
+                  string insertQuery = "SELECT instokentransfers("+
+                       boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      payeracct+"','"+
+                      payeeacct+"',"+
+                      sufamount+",'"+
+                      trnstype +"','"+
+                      memo+"','"+
+                      blocktimestamp+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins tokentransfers ${s}",("s",insertQuery));
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins tokentransfers result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into token transfers failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+                } //end if action is transfer
+                 if ((actionname == "issue")&&(receiveraccount == "fio.token")){
+                  string payeracct = "eosio";               
+                  string payeeacct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["to"],DISALLOW_EMPTY_VALUES);
+                  string memo = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["memo"],DISALLOW_EMPTY_VALUES);
+                  string TRNSTYPETOKENMINT = "token_mint";
+                  string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["quantity"],DISALLOW_EMPTY_VALUES);
+                  sufamount.erase(std::remove(sufamount.begin(), sufamount.end(), '.'), sufamount.end());
+                  string substringToRemove = " FIO";
+                  size_t position = sufamount.find(substringToRemove);
+                  if (position != std::string::npos) {
+                      sufamount.erase(position, substringToRemove.length());
+                  }
+ ilog("EDEDEDEDEDEDEDED key_to_account account ${s}",("s",payeeacct));
+                  string insertQuery = "SELECT instokentransfers("+
+                       boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      payeracct+"','"+
+                      payeeacct+"',"+
+                      sufamount+",'"+
+                      TRNSTYPETOKENMINT +"','"+
+                      memo+"','"+
+                      blocktimestamp+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins tokentransfers ${s}",("s",insertQuery));
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins tokentransfers result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into token transfers failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+                } //end if action is transfer
+                else if(actionname ==  "newaccount"){
+                   string insertQuery = "SELECT insupdaccounts("+
+                      bnums+",'"+
+                      actionaccount+"','"+
+                      "UNKNOWN','"+
+                      blocktimestamp+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins accounts ${s}",("s",insertQuery));
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins accounts result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into accounts failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+
+                }
+                else if (actionname == "bind2eosio"){
+                  string accountnm = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["account"],ALLOW_EMPTY_VALUES);                 
+                  string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["client_key"],ALLOW_EMPTY_VALUES);
+                  string insertQuery = "SELECT insupdaccounts("+
+                      bnums+",'"+
+                      accountnm+"','"+
+                      pubkey+"','"+
+                      blocktimestamp+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins accounts ${s}",("s",insertQuery));
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins transaction result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into accounts failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+
+                  insertQuery = "SELECT insaccountactivities("+
+                      boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      accountnm+"','"+
+                      +"receiver');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
+                  res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into account activities failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+                } //end if action is bind2eosio
+
                 string outs = "traceid '"+boost::lexical_cast<std::string>(fktransactionid)+"'"+
                 "actionordinal '"+actionordinal+"'"+
                 "receiveraccount '"+receiveraccount+"'"+
