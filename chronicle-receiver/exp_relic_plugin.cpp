@@ -472,6 +472,8 @@ public:
                 } //end if action is trnsfiopubky trnsloctok
                 else if ((actionname == "regdomain")){
                    string domainname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_domain"],ALLOW_EMPTY_VALUES);                                
+                   string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
+                   
                    string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["owner_fio_public_key"],ALLOW_EMPTY_VALUES);
                   string owneracct = fioio::key_to_account(pubkey);
                   string ispublic = "false";
@@ -504,7 +506,6 @@ public:
                   boost::lexical_cast<std::string>(fktransactionid)+","+
                       bnums+",'"+
                       domainname+"','"+
-                      expirationtimestamp+"','"+
                       DOMAINACTIVITYREGISTER+"','"+
                       blocktimestamp+"');";
                       
@@ -518,7 +519,168 @@ public:
                     return;
                   }
                   PQclear(res);
+
+                  if(!(actoraccount == owneracct)){ //insert account activity. 
+                      insertQuery = "SELECT insaccountactivities("+
+                      boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      owneracct+"','"+
+                      +"receiver');";
+                      
+                      ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
+                      res = PQexec(conn, insertQuery.c_str());
+                      ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
+                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                        ilog("insert into account activities failed ");
+                        PQclear(res);
+                        PQfinish(conn);
+                        return;
+                      }
+                      PQclear(res);
+                  } //end if actor is owner.
                 } //end if action is regdomain
+                else if ((actionname == "renewdomain")){
+                  string domainname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_domain"],ALLOW_EMPTY_VALUES);                                
+                  string expirationtimestamp = "1978-01-02"; //TODO integrate response from state history!!!!!
+                  //TODO integrate response!!!!!
+                  //TODO integrate response!!!!!
+                  string insertQuery = "SELECT upddomainexp('"+
+                      domainname+"','"+
+                      expirationtimestamp +"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED upd domains ${s}",("s",insertQuery));
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  ilog("upd domains result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("update domains failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+
+                  //insert domain activities
+                  string DOMAINACTIVITYRENEW = "renew";
+                  insertQuery = "SELECT insdomainactivities("+
+                  boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      domainname+"','"+
+                      DOMAINACTIVITYRENEW+"','"+
+                      blocktimestamp+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins domainactivities ${s}",("s",insertQuery));
+                  res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins domainactivities result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into domainactivities failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+                } //end if action is renewdomain
+                 else if ((actionname == "xferdomain")){
+                  string domainname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_domain"],ALLOW_EMPTY_VALUES);                                
+                  string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["new_owner_fio_public_key"],ALLOW_EMPTY_VALUES);
+                  string owneracct = fioio::key_to_account(pubkey);
+                 
+                  string insertQuery = "SELECT upddomainowner('"+
+                      domainname+"','"+
+                      owneracct +"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED upd domains ${s}",("s",insertQuery));
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  ilog("upd domains result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("update domains failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+
+                  //insert domain activities
+                  string DOMAINACTIVITYTRANSFER = "transfer";
+                  insertQuery = "SELECT insdomainactivities("+
+                  boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      domainname+"','"+
+                      DOMAINACTIVITYTRANSFER+"','"+
+                      blocktimestamp+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins domainactivities ${s}",("s",insertQuery));
+                  res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins domainactivities result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into domainactivities failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+
+                   insertQuery = "SELECT insaccountactivities("+
+                      boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      owneracct+"','"+
+                      +"receiver');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
+                  res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into account activities failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+                } //end if action is xferdomain
+                 else if ((actionname == "setdomainpub")){
+                  string domainname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_domain"],ALLOW_EMPTY_VALUES);                                
+                  string publicstr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["is_public"],ALLOW_EMPTY_VALUES);
+                  
+                 
+                  string insertQuery = "SELECT upddomainispublic('"+
+                      domainname+"','"+
+                      publicstr +"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED upd domains ${s}",("s",insertQuery));
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  ilog("upd domains result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("update domains failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+
+                  //insert domain activities
+                  string DOMAINACTIVITYPUBLIC = "public";
+                   string DOMAINACTIVITYNONPUBLIC = "non-public";
+                   string activitytype = DOMAINACTIVITYPUBLIC;
+                   if(publicstr =="0"){
+                    activitytype = DOMAINACTIVITYNONPUBLIC;
+                   }
+                  insertQuery = "SELECT insdomainactivities("+
+                  boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      domainname+"','"+
+                      activitytype+"','"+
+                      blocktimestamp+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins domainactivities ${s}",("s",insertQuery));
+                  res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins domainactivities result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into domainactivities failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+                } //end if action is setdomainpub
                 else if ((actionname == "wraptokens")){
                    string payeracct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                   string payeeacct = "fio.oracle";

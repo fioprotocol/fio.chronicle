@@ -60,6 +60,9 @@ inline string getjsonstring(string defaultv, rapidjson::Value& v, bool allowempt
         // Get the JSON string from the buffer
         return  buffer.GetString();
 
+    }else if (v.IsNumber()){
+      ilog("EDEDEDEDEDEDEDED DOING A number!!!!");
+        return  std::to_string(v.GetInt());
     }
   }
   return retval;
