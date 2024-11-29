@@ -8,19 +8,30 @@ if [[ "$(uname)" == "Linux" ]]; then
       # obtain NAME and other information
       . /etc/os-release
       if [[ ${NAME} != "Ubuntu" ]]; then
-         echo "Currently only supporting Ubuntu based builds. Proceed at your own risk."
+         echo && echo "Currently only supporting Ubuntu based builds. Proceed at your own risk."
       fi
    else
-       echo "Currently only supporting Ubuntu based builds. /etc/os-release not found. Your Linux distribution is not supported. Proceed at your own risk."
+       echo && echo "Currently only supporting Ubuntu based builds. /etc/os-release not found. Your Linux distribution is not supported. Proceed at your own risk."
    fi
 else
-    echo "Currently only supporting Ubuntu based builds. Your architecture is not supported. Proceed at your own risk."
+    echo && echo "Currently only supporting Ubuntu based builds. Your architecture is not supported. Proceed at your own risk."
 fi
 
 if [[ $# -eq 0 || -z "$1" ]]; then
+   echo
+   echo "ERROR: No argument provided for Dependency directory" && echo
    echo "Usage:"
    echo "./scripts/build.sh DEPS_DIR"
-   echo "  DEPS_DIR: directory where to place build dependencies (Clang, LLVM, Boost)"
+   echo "  DEPS_DIR: directory to place build dependencies (Clang, LLVM, Boost)"
+   exit -1
+fi
+
+if [[ ! -x "$1" ]]; then
+   echo
+   echo "ERROR: $1 is NOT valid; Check permissions and retry!" && echo
+   echo "Usage:"
+   echo "./scripts/build.sh DEPS_DIR"
+   echo "  DEPS_DIR: directory to place build dependencies (Clang, LLVM, Boost)"
    exit -1
 fi
 
@@ -43,14 +54,12 @@ BUILD_DIR=${HOME_DIR}/build
 
 . ${SCRIPTS_DIR}/build_utils.sh
 
-echo
+echo && echo "Checking build/run-time dependencies..."
 . ${SCRIPTS_DIR}/build_deps.sh ${DEPS_DIR}
-echo
-
-makedir ${BUILD_DIR} && pushdir ${BUILD_DIR}
 
 # build Chronicle
-echo "Building Chronicle"
+echo && echo "Building..."
+makedir ${BUILD_DIR} && pushdir ${BUILD_DIR}
 try cmake -DCMAKE_TOOLCHAIN_FILE=${SCRIPTS_DIR}/pinned_toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${LLVM_DIR}/lib/cmake -DCMAKE_PREFIX_PATH=${BOOST_DIR}/bin ${MORE_CMAKE_FLAGS} ${SCRIPTS_DIR}/..
 
 try make -j${JOBS}

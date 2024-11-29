@@ -4,6 +4,11 @@
 #set -x
 
 DEPS_DIR=$1
+if [[ -z $DEPS_DIR ]]; then
+  echo "ERROR: Unable to proceed; no directory provided to place build dependencies"
+  echo
+  exit 1
+fi
 
 ARCH=`uname -m`
 JOBS=$(nproc)
@@ -22,7 +27,9 @@ BUILD_DIR=${HOME_DIR}/build
 
 . ${SCRIPTS_DIR}/build_utils.sh
 
+echo && echo "Checking package dependencies (pre-built)..."
 sudo ${SCRIPTS_DIR}/install_deps.sh
+echo Done
 
 install_clang() {
   CLANG_DIR=$1
@@ -92,8 +99,9 @@ install_boost() {
   export BOOST_DIR=${BOOST_DIR}
 }
 
+echo && echo "Checking build dependencies (clang, llvm, boost)..."
 pushdir ${DEPS_DIR}
-
 install_clang ${DEPS_DIR}/clang-${CLANG_VER}
 install_llvm ${DEPS_DIR}/llvm-${LLVM_VER}
 install_boost ${DEPS_DIR}/boost_${BOOST_VER//\./_}
+echo Done
