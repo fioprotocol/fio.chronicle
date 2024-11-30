@@ -893,7 +893,7 @@ public:
                   } //end if actor is owner.
 
                 
-                   insertQuery = "SELECT inspubaddresses("+
+                   insertQuery = "SELECT insupdpubaddresses("+
                       bnums+",'"+
                       handle+"','"+
                        chaincode+"','"+
@@ -954,6 +954,47 @@ public:
                   }
                   PQclear(res);
                 } //end if action is renewaddress
+                 else if ((actionname == "addbundles")){
+                  string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
+                  string bundlesetss = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["bundle_sets"],ALLOW_EMPTY_VALUES);                                
+                 
+                 
+                  string HANDLEACTIVITYADDBUNDLES = "add_bundles";
+                  string chaincode = "FIO";
+                  string tokencode = "FIO";
+                  string insertQuery = "SELECT updhandlesaddbundles('"+
+                      handle +"'," +
+                      bundlesetss +");";
+                      
+                  ilog("EDEDEDEDEDEDEDED upd handles ${s}",("s",insertQuery));
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  ilog("upd handles result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("update handles failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+                  
+                  insertQuery = "SELECT inshandleactivities("+
+                  boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      handle+"','"+
+                      HANDLEACTIVITYADDBUNDLES+"','"+
+                      blocktimestamp+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
+                  res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into handleactivities failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+                } //end if action is addbundles
                 else if ((actionname == "xferaddress")){
                   string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
                   string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["new_owner_fio_public_key"],ALLOW_EMPTY_VALUES);
@@ -1030,7 +1071,7 @@ public:
                 
 
                 
-                   insertQuery = "SELECT inspubaddresses("+
+                   insertQuery = "SELECT insupdpubaddresses("+
                       bnums+",'"+
                       handle+"','"+
                        chaincode+"','"+
@@ -1062,6 +1103,186 @@ public:
                   }
                   PQclear(res);
                 } //end if action is xferaddress
+                 else if ((actionname == "remalladdr")){
+                  string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
+                  string HANDLEACTIVITYREMALLPUBADDR = "rem_all_pubadd";
+                  
+                 
+                  
+                  string insertQuery = "SELECT inshandleactivities("+
+                  boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      handle+"','"+
+                      HANDLEACTIVITYREMALLPUBADDR+"','"+
+                      blocktimestamp+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into handleactivities failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+                
+                
+                   insertQuery = "SELECT delpubaddresses('"+
+                      handle+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED del pubaddresses ${s}",("s",insertQuery));
+                  res = PQexec(conn, insertQuery.c_str());
+                  ilog("del pubaddresses result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("del pubaddresses failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+                
+                } //end if action is remalladdr
+                else if ((actionname == "addaddress")){
+                  string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
+                  const rapidjson::Value& dvtrace = actdata["public_addresses"];
+                  for (const auto& object : dvtrace.GetArray()) {
+                      if (!object.IsObject()) {
+                         std::cerr << "Error: Element in array is not an object." << std::endl;
+                         PQfinish(conn); //TODO -- cleaner exit.
+                      }
+                      const rapidjson::Value& addressdata = object;
+
+                    if (addressdata.IsObject())
+                    {
+                      string HANDLEACTIVITYADDPUBADD = "add_pubadd";
+                      ilog("EDEDEEEDEDEDEDED actdata is object!!");
+                      string addressdatastr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata,ALLOW_EMPTY_VALUES);
+                      ilog("EDEDEDEDEDEDEDED addressdata looks like ${d}",("d",addressdatastr));
+                      string chaincode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata["chain_code"],ALLOW_EMPTY_VALUES);                                
+                      string tokencode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata["token_code"],ALLOW_EMPTY_VALUES);                                
+                      string pubaddress = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata["public_address"],ALLOW_EMPTY_VALUES);                                
+                    
+                      string insertQuery = "SELECT inshandleactivities("+
+                      boost::lexical_cast<std::string>(fktransactionid)+","+
+                          bnums+",'"+
+                          handle+"','"+
+                          HANDLEACTIVITYADDPUBADD+"','"+
+                          blocktimestamp+"');";
+                          
+                      ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
+                      PGresult *res = PQexec(conn, insertQuery.c_str());
+                      ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
+                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                        ilog("insert into handleactivities failed ");
+                        PQclear(res);
+                        PQfinish(conn);
+                        return;
+                      }
+                      PQclear(res);
+
+                        insertQuery = "SELECT insupdpubaddresses("+
+                          bnums+",'"+
+                          handle+"','"+
+                          chaincode+"','"+
+                            tokencode+"','"+
+                            pubaddress+"');";
+                          
+                      ilog("EDEDEDEDEDEDEDED ins pubaddresses ${s}",("s",insertQuery));
+                      res = PQexec(conn, insertQuery.c_str());
+                      ilog("ins pubaddresses result status ${r} ",("r",PQresultStatus(res)));
+                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                        ilog("insert into pubaddresses failed ");
+                        PQclear(res);
+                        PQfinish(conn);
+                        return;
+                      }
+                      PQclear(res);
+
+                      if (chaincode == "FIO" && (tokencode == "FIO" || tokencode == "*")){
+                          insertQuery = "SELECT updhandlesencryptkey('"+
+                          handle +"','" +
+                          pubaddress +"');";
+                          
+                        ilog("EDEDEDEDEDEDEDED upd handles ${s}",("s",insertQuery));
+                        res = PQexec(conn, insertQuery.c_str());
+                        ilog("upd handles result status ${r} ",("r",PQresultStatus(res)));
+                        if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                          ilog("update handles failed ");
+                          PQclear(res);
+                          PQfinish(conn);
+                          return;
+                        }
+                        PQclear(res);
+                      }
+                    }else {
+                      ilog ("EDEDEDEDED pub addresses parse error!!!");
+                      PQfinish(conn);
+                    }
+                  } //end loop over pub addresses.
+                    
+                } //end if action is addaddress
+                 else if ((actionname == "remaddress")){
+                  string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
+                  const rapidjson::Value& dvtrace = actdata["public_addresses"];
+                  for (const auto& object : dvtrace.GetArray()) {
+                      if (!object.IsObject()) {
+                         std::cerr << "Error: Element in array is not an object." << std::endl;
+                         PQfinish(conn); //TODO -- cleaner exit.
+                      }
+                      const rapidjson::Value& addressdata = object;
+
+                    if (addressdata.IsObject())
+                    {
+                      string HANDLEACTIVITYREMPUBADD = "rem_pubadd";
+                      ilog("EDEDEEEDEDEDEDED actdata is object!!");
+                      string addressdatastr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata,ALLOW_EMPTY_VALUES);
+                      ilog("EDEDEDEDEDEDEDED addressdata looks like ${d}",("d",addressdatastr));
+                      string chaincode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata["chain_code"],ALLOW_EMPTY_VALUES);                                
+                      string tokencode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata["token_code"],ALLOW_EMPTY_VALUES);                                
+                      string pubaddress = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata["public_address"],ALLOW_EMPTY_VALUES);                                
+                    
+                      string insertQuery = "SELECT inshandleactivities("+
+                      boost::lexical_cast<std::string>(fktransactionid)+","+
+                          bnums+",'"+
+                          handle+"','"+
+                          HANDLEACTIVITYREMPUBADD+"','"+
+                          blocktimestamp+"');";
+                          
+                      ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
+                      PGresult *res = PQexec(conn, insertQuery.c_str());
+                      ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
+                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                        ilog("insert into handleactivities failed ");
+                        PQclear(res);
+                        PQfinish(conn);
+                        return;
+                      }
+                      PQclear(res);
+
+                        insertQuery = "SELECT delpubaddress('"+
+                          handle+"','"+
+                          chaincode+"','"+
+                            tokencode+"','"+
+                            pubaddress+"');";
+                          
+                      ilog("EDEDEDEDEDEDEDED del pubaddress ${s}",("s",insertQuery));
+                      res = PQexec(conn, insertQuery.c_str());
+                      ilog("del pubaddress result status ${r} ",("r",PQresultStatus(res)));
+                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                        ilog("delto pubaddress failed ");
+                        PQclear(res);
+                        PQfinish(conn);
+                        return;
+                      }
+                      PQclear(res);
+                    }else {
+                      ilog ("EDEDEDEDED pub addresses parse error!!!");
+                      PQfinish(conn);
+                    }
+                  } //end loop over pub addresses.
+                    
+                } //end if action is remaddress
                 else if ((actionname == "wraptokens")){
                    string payeracct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                   string payeeacct = "fio.oracle";
