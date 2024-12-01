@@ -995,6 +995,182 @@ public:
                   }
                   PQclear(res);
                 } //end if action is addbundles
+                else if ((actionname == "addnft")){
+                  string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
+                  
+                  string HANDLEACTIVITYADDNFT = "add_nft";
+                  string chaincode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
+                  
+                  string tokencode = "FIO";
+
+
+                  string insertQuery = "SELECT inshandleactivities("+
+                  boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      handle+"','"+
+                      HANDLEACTIVITYADDNFT+"','"+
+                      blocktimestamp+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into handleactivities failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+                
+                   const rapidjson::Value& dvtrace = actdata["nfts"];
+                  for (const auto& object : dvtrace.GetArray()) {
+                      if (!object.IsObject()) {
+                         std::cerr << "Error: Element in array is not an object." << std::endl;
+                         PQfinish(conn); //TODO -- cleaner exit.
+                      }
+                      const rapidjson::Value& nftdata = object;
+
+                    if (nftdata.IsObject())
+                    {
+                      
+                      ilog("EDEDEEEDEDEDEDED nftdata is object!!");
+                      string nftdatastr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata,ALLOW_EMPTY_VALUES);
+                      ilog("EDEDEDEDEDEDEDED nftdata looks like ${d}",("d",nftdatastr));
+                      string chaincode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["chain_code"],ALLOW_EMPTY_VALUES);                                
+                      string contractaddress = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["contract_address"],ALLOW_EMPTY_VALUES);                                
+                      string tokenid = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["token_id"],ALLOW_EMPTY_VALUES);                                
+                    string url = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["url"],ALLOW_EMPTY_VALUES);                                
+                    string hash = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["hash"],ALLOW_EMPTY_VALUES);                                
+                    string metadata = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["metadata"],ALLOW_EMPTY_VALUES);                                
+ 
+                        insertQuery = "SELECT insupdnftsignatures("+
+                          bnums+",'"+
+                          handle+"','"+
+                          chaincode+"','"+
+                          contractaddress+"','"+
+                            tokenid+"','"+
+                            url+"','"+
+                            hash+"','"+
+                            metadata+"');";
+                          
+                      ilog("EDEDEDEDEDEDEDED insupd nftsignatures ${s}",("s",insertQuery));
+                      res = PQexec(conn, insertQuery.c_str());
+                      ilog("insupd nftsignatures result status ${r} ",("r",PQresultStatus(res)));
+                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                        ilog("insertupd into nftsignatures failed ");
+                        PQclear(res);
+                        PQfinish(conn);
+                        return;
+                      }
+                      PQclear(res);
+
+                      
+                    }else {
+                      ilog ("EDEDEDEDED nfts parse error!!!");
+                      PQfinish(conn);
+                    }
+                  } //end loop over nfts.
+                } //end if action is addnft
+                 else if ((actionname == "remnft")){
+                  string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
+                  string HANDLEACTIVITYREMNFT = "rem_nft";
+                  string insertQuery = "SELECT inshandleactivities("+
+                  boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      handle+"','"+
+                      HANDLEACTIVITYREMNFT+"','"+
+                      blocktimestamp+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into handleactivities failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+
+                   const rapidjson::Value& dvtrace = actdata["nfts"];
+                  for (const auto& object : dvtrace.GetArray()) {
+                      if (!object.IsObject()) {
+                         std::cerr << "Error: Element in array is not an object." << std::endl;
+                         PQfinish(conn); //TODO -- cleaner exit.
+                      }
+                      const rapidjson::Value& nftdata = object;
+
+                    if (nftdata.IsObject())
+                    {
+                      
+                      ilog("EDEDEEEDEDEDEDED nftdata is object!!");
+                      string nftdatastr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata,ALLOW_EMPTY_VALUES);
+                      ilog("EDEDEDEDEDEDEDED nftdata looks like ${d}",("d",nftdatastr));
+                      string chaincode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["chain_code"],ALLOW_EMPTY_VALUES);                                
+                      string contractaddress = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["contract_address"],ALLOW_EMPTY_VALUES);                                
+                      string tokenid = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["token_id"],ALLOW_EMPTY_VALUES);                                
+                    
+                        insertQuery = "SELECT delnftsignature('"+
+                          handle+"','"+
+                          chaincode+"','"+
+                          contractaddress+"','"+
+                            tokenid+"');";
+                          
+                      ilog("EDEDEDEDEDEDEDED del nftsignatures ${s}",("s",insertQuery));
+                      res = PQexec(conn, insertQuery.c_str());
+                      ilog("del nftsignatures result status ${r} ",("r",PQresultStatus(res)));
+                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                        ilog("del  nftsignatures failed ");
+                        PQclear(res);
+                        PQfinish(conn);
+                        return;
+                      }
+                      PQclear(res);
+
+                      
+                    }else {
+                      ilog ("EDEDEDEDED nfts parse error!!!");
+                      PQfinish(conn);
+                    }
+                  } //end loop over nfts.
+                } //end if action is remnft
+                 else if ((actionname == "remallnfts")){
+                  string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
+                  string HANDLEACTIVITYREMALLNFT = "rem_all_nft";
+                  string insertQuery = "SELECT inshandleactivities("+
+                  boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      handle+"','"+
+                      HANDLEACTIVITYREMALLNFT+"','"+
+                      blocktimestamp+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into handleactivities failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+
+                  insertQuery = "SELECT delnftsignatures('"+
+                      handle+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED delnftsignatures ${s}",("s",insertQuery));
+                  res = PQexec(conn, insertQuery.c_str());
+                  ilog("delnftsignatures result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("delnftsignatures failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+
+                 
+                } //end if action is remallnfts
                 else if ((actionname == "xferaddress")){
                   string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
                   string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["new_owner_fio_public_key"],ALLOW_EMPTY_VALUES);
