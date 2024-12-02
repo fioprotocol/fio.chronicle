@@ -470,7 +470,7 @@ public:
                   }
                   PQclear(res);
                 } //end if action is trnsfiopubky trnsloctok
-                else if ((actionname == "regdomain")){
+                else if ((actionname == "regdomain") || (actionname == "regdomadd") ){
                    string domainname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_domain"],ALLOW_EMPTY_VALUES);                                
                    string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                    
@@ -538,7 +538,7 @@ public:
                       }
                       PQclear(res);
                   } //end if actor is owner.
-                } //end if action is regdomain
+                } //end if action is regdomain, regdomadd
                 else if ((actionname == "renewdomain")){
                   string domainname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_domain"],ALLOW_EMPTY_VALUES);                                
                   string expirationtimestamp = "1978-01-02"; //TODO integrate response from state history!!!!!
@@ -813,6 +813,204 @@ public:
                   }
                   PQclear(res);
                 } //end if action is xferescrow
+                  else if ((actionname == "updcryptkey")){
+                  string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
+                  string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["encrypt_public_key"],ALLOW_EMPTY_VALUES);
+                  string insertQuery = "SELECT updhandlessetencryptkey('"+
+                      handle +"','" +
+                      pubkey +"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED upd handles ${s}",("s",insertQuery));
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  ilog("upd handles result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("update handles failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+
+                  string HANDLEACTIVITYTYUPDATEENCRYPTKEY = "upd_encryptkey";
+                  
+                  insertQuery = "SELECT inshandleactivities("+
+                  boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      handle+"','"+
+                      HANDLEACTIVITYTYUPDATEENCRYPTKEY+"','"+
+                      blocktimestamp+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
+                  res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into handleactivities failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+                } //end if action is updcryptkey
+                 else if ((actionname == "burnaddress")){
+                  string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
+                  string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["encrypt_public_key"],ALLOW_EMPTY_VALUES);
+                  string HANDLESTATUSBURNT = "burnt";
+                  string insertQuery = "SELECT updhandlesstatus('"+
+                      handle +"','" +
+                      HANDLESTATUSBURNT +"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED upd handles ${s}",("s",insertQuery));
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  ilog("upd handles result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("update handles failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+
+                  string HANDLEACTIVITYTYSELFBURN = "self_burn";
+                  
+                  insertQuery = "SELECT inshandleactivities("+
+                  boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      handle+"','"+
+                      HANDLEACTIVITYTYSELFBURN+"','"+
+                      blocktimestamp+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
+                  res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into handleactivities failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+
+                   insertQuery = "SELECT delpubaddresses('"+
+                      handle+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED del pubaddresses ${s}",("s",insertQuery));
+                  res = PQexec(conn, insertQuery.c_str());
+                  ilog("del pubaddresses result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("del pubaddresses failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+
+                   insertQuery = "SELECT delnftsignatures('"+
+                      handle+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED delnftsignatures ${s}",("s",insertQuery));
+                  res = PQexec(conn, insertQuery.c_str());
+                  ilog("delnftsignatures result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("delnftsignatures failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+
+
+
+                } //end if action is burnaddress
+                 else if ((actionname == "newfundsreq")){
+                  string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payee_fio_address"],ALLOW_EMPTY_VALUES);                                
+                  string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
+                  string payerhandle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payer_fio_address"],ALLOW_EMPTY_VALUES);  
+                  string payeehandle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payee_fio_address"],ALLOW_EMPTY_VALUES);  
+                   string content = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["content"],ALLOW_EMPTY_VALUES);  
+                  string REQUESTSTATUSPENDING = "pending";
+                  string HANDLEACTIVITYTYNEWREQUEST = "new_request";
+                  string fiochainrequestid = "1";
+                  //TODO -- integrate the response and get the fio_request_id from the response.
+                  //TODO -- integrate the response and get the fio_request_id from the response.
+                  //TODO -- integrate the response and get the fio_request_id from the response.
+
+                  
+                  string insertQuery = "SELECT inshandleactivities("+
+                  boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      handle+"','"+
+                      HANDLEACTIVITYTYNEWREQUEST+"','"+
+                      blocktimestamp+"');";
+                      
+                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                    ilog("insert into handleactivities failed ");
+                    PQclear(res);
+                    PQfinish(conn);
+                    return;
+                  }
+                  PQclear(res);
+                
+                  
+                      insertQuery = "SELECT insaccountactivities("+
+                      boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      actoraccount+"','"+
+                      +"receiver');";
+                      
+                      ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
+                      res = PQexec(conn, insertQuery.c_str());
+                      ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
+                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                        ilog("insert into account activities failed ");
+                        PQclear(res);
+                        PQfinish(conn);
+                        return;
+                      }
+                      PQclear(res);
+
+                       insertQuery = "SELECT insaccountactivitieshandle("+
+                      boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      payerhandle+"','"+
+                      +"receiver');";
+                      
+                      ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
+                      res = PQexec(conn, insertQuery.c_str());
+                      ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
+                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                        ilog("insert into account activities failed ");
+                        PQclear(res);
+                        PQfinish(conn);
+                        return;
+                      }
+                      PQclear(res);
+
+                       insertQuery = "SELECT insfiorequests("+
+                      boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+","+
+                      fiochainrequestid+",'"+
+                      payerhandle+"','"+
+                      payeehandle+"','"+
+                      content+"','"+
+                      REQUESTSTATUSPENDING+"','"+
+                       blocktimestamp+"');";
+                     
+                      
+                      ilog("EDEDEDEDEDEDEDED insfiorequests ${s}",("s",insertQuery));
+                      res = PQexec(conn, insertQuery.c_str());
+                      ilog("insfiorequests result status ${r} ",("r",PQresultStatus(res)));
+                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                        ilog("insfiorequests activities failed ");
+                        PQclear(res);
+                        PQfinish(conn);
+                        return;
+                      }
+                      PQclear(res);
+                 
+                } //end if action is newfundsreq
                  else if ((actionname == "regaddress")){
                   string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
                  string domain = "";
