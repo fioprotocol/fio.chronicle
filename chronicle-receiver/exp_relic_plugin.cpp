@@ -76,6 +76,12 @@ public:
   uint32_t queue_lwm;
   boost::asio::const_buffer async_out_buffer;
   std::shared_ptr<boost::asio::deadline_timer> mytimer;
+  std::vector<rapidjson::Value> domainjsons;
+  std::vector<rapidjson::Value> handlejsons;
+  std::vector<std::string> burnaddresses;
+  bool burnexpiredthisblock = false;
+  uint64_t burnexpiredtrid = 0;
+  string burnexpiredtimestamp = "";
 
   uint32_t pause_time_msec = 0;
   uint32_t msg_report_counter = 1000;
@@ -297,7 +303,189 @@ public:
           uint32_t bnum =static_cast<uint32_t>(std::stoul( document["data"]["block_num"].GetString()));
           string bnums =document["data"]["block_num"].GetString();
           if (msgtype == "BLOCK_COMPLETED"){
-          //ack block on BLOCK_COMPLETED
+
+               if (burnexpiredthisblock){
+                   //first process the list of domains that may have been burnt
+                   for (const rapidjson::Value& object : domainjsons) {
+                      if (!object.IsObject()) {
+                         std::cerr << "Error: Element in array is not an object." << std::endl;
+                         PQfinish(conn); //TODO -- cleaner exit.
+                      }
+                      string domname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["name"],ALLOW_EMPTY_VALUES);
+                      string ispublic = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["is_public"],ALLOW_EMPTY_VALUES);                                
+                      string expiration = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["expiration"],ALLOW_EMPTY_VALUES);
+                      string domainbnum = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["block_num"],ALLOW_EMPTY_VALUES);
+                 
+                    if(bnums == domainbnum){ 
+                          int64_t updburntres = 0;
+                          string insertQuery = "SELECT upddomainburnt('"+
+                              domname +"','" +
+                              ispublic +"','" +
+                              expiration +"');";
+                              
+                          ilog("EDEDEDEDEDEDEDED upddomainburnt ${s}",("s",insertQuery));
+                          PGresult *res = PQexec(conn, insertQuery.c_str());
+                          ilog("upddomainburnt result status ${r} ",("r",PQresultStatus(res)));
+                          if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                            ilog("upddomainburnt failed ");
+                            PQclear(res);
+                            PQfinish(conn);
+                            return;
+                          }
+                           if (PQgetvalue(res, 0, 0)) {
+                                    updburntres = atoi(PQgetvalue(res, 0, 0));
+                                }
+                                
+                          PQclear(res);
+
+                          if (updburntres == 1){
+                              string DOMAINACTIVITYAUTOBURN = "auto_burn";
+                              insertQuery = "SELECT insdomainactivities("+
+                              boost::lexical_cast<std::string>(burnexpiredtrid)+","+
+                                  bnums+",'"+
+                                  domname+"','"+
+                                  DOMAINACTIVITYAUTOBURN+"','"+
+                                  burnexpiredtimestamp+"');";
+                                  
+                              ilog("EDEDEDEDEDEDEDED ins domainactivities ${s}",("s",insertQuery));
+                              res = PQexec(conn, insertQuery.c_str());
+                              ilog("ins domainactivities result status ${r} ",("r",PQresultStatus(res)));
+                              if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                                ilog("insert into domainactivities failed ");
+                                PQclear(res);
+                                PQfinish(conn);
+                                return;
+                              }
+                              PQclear(res);
+                          }
+                      }
+                     
+                   }
+                  
+
+                  for (const rapidjson::Value& object : handlejsons) {
+                      if (!object.IsObject()) {
+                         std::cerr << "Error: Element in array is not an object." << std::endl;
+                         PQfinish(conn); //TODO -- cleaner exit.
+                      }
+                      /*
+                      {"msgtype":"TBL_ROW","data":{"block_num":"4557","block_timestamp":"2024-11-30T17:07:49.000","added":"true","kvo":{"code":"fio.address","scope":"fio.address","table":"fionames","primary_key":"594","payer":"1dqrdco3jhzw","value":{"id":"594","name":"nfohf@fpipqbyevp","namehash":"205290705409493029694729949301441782950","domain":"fpipqbyevp","domainhash":"276076562606947566776532857740196148755","expiration":"4294967295","owner_account":"1dqrdco3jhzw","addresses":[{"token_code":"FIO","chain_code":"FIO","public_address":"FIO67daDnkvoRwy5KPirmPuxw3rjyJDs5CFYXqRXSmuuoiseETo7c"}],"bundleeligiblecountdown":"100"}}}}
+
+                      */
+
+                      string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["name"],ALLOW_EMPTY_VALUES);
+                      string expiration = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["expiration"],ALLOW_EMPTY_VALUES);
+                      string bundlecount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["bundleeligiblecountdown"],ALLOW_EMPTY_VALUES);
+                      string handlebnum = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["block_num"],ALLOW_EMPTY_VALUES);
+
+                    //if this handle is burnaddress then skip it
+                    if (std::find(burnaddresses.begin(), burnaddresses.end(), handle) != burnaddresses.end()){
+                      //this handle was burnt with burnaddress, do not process.
+                      continue;
+                    }
+                    if(bnums == handlebnum){ 
+
+                           //process array of addresses.
+                            const rapidjson::Value& dvaddresses = document["data"]["kvo"]["value"]["addresses"];
+                            bool makehandleburnt = true;
+                            for (const auto& object : dvaddresses.GetArray()) {
+                               if (!object.IsObject()) {
+                                  std::cerr << "Error: Element in array is not an object." << std::endl;
+                                  continue;
+                                }
+                                string tokencode = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)object["token_code"],DISALLOW_EMPTY_VALUES);
+                                string chaincode = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)object["chain_code"],DISALLOW_EMPTY_VALUES);
+                                string publicaddress = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)object["public_address"],DISALLOW_EMPTY_VALUES);
+                             
+
+                                int64_t hasparesult = 0;
+                                string insertQuery = "SELECT existspubaddress('"+
+                                    handle +"','" +
+                                    chaincode +"','" +
+                                    tokencode +"','" +
+                                    publicaddress +"');";
+                                    
+                                ilog("EDEDEDEDEDEDEDED existspubaddress ${s}",("s",insertQuery));
+                                PGresult *res = PQexec(conn, insertQuery.c_str());
+                                ilog("existspubaddress result status ${r} ",("r",PQresultStatus(res)));
+                                if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                                  ilog("existspubaddress failed ");
+                                  PQclear(res);
+                                  PQfinish(conn);
+                                  return;
+                                }
+
+                                if (PQgetvalue(res, 0, 0)) {
+                                    hasparesult = atoi(PQgetvalue(res, 0, 0));
+                                }
+                                if (hasparesult == 0){
+                                  //do not burn this handle!!!
+                                  makehandleburnt = false;
+                                  break;
+                                }
+                                PQclear(res);
+                          } //end for addresses
+
+                          if (makehandleburnt) {
+
+                             int64_t updhandleres =0;
+                             string insertQuery = "SELECT updhandleburnt('"+
+                                    handle +"','" +
+                                    bundlecount +"','" +
+                                    expiration +"');";
+                                    
+                                ilog("EDEDEDEDEDEDEDED updhandleburnt ${s}",("s",insertQuery));
+                                PGresult *res = PQexec(conn, insertQuery.c_str());
+                                ilog("updhandleburnt result status ${r} ",("r",PQresultStatus(res)));
+                                if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                                  ilog("updhandleburnt failed ");
+                                  PQclear(res);
+                                  PQfinish(conn);
+                                  return;
+                                }
+
+                                if (PQgetvalue(res, 0, 0)) {
+                                    updhandleres = atoi(PQgetvalue(res, 0, 0));
+                                }
+                               
+                                PQclear(res);
+                                 if (updhandleres == 1){
+                                    string HANDLECTIVITYAUTOBURN = "auto_burn";
+                                     insertQuery = "SELECT inshandleactivities("+
+                                      boost::lexical_cast<std::string>(burnexpiredtrid)+","+
+                                          bnums+",'"+
+                                          handle+"','"+
+                                          HANDLECTIVITYAUTOBURN+"','"+
+                                          burnexpiredtimestamp+"');";
+                                          
+                                      ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
+                                      res = PQexec(conn, insertQuery.c_str());
+                                      ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
+                                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                                        ilog("insert into handleactivities failed ");
+                                        PQclear(res);
+                                        PQfinish(conn);
+                                        return;
+                                      }
+                                      PQclear(res);
+                                }
+                          } 
+                      }
+                   }
+                  
+          }
+
+           domainjsons.clear();
+           handlejsons.clear();
+           burnexpiredthisblock = false;
+           burnexpiredtrid = 0;
+           burnexpiredtimestamp = "";
+           burnaddresses.clear();
+
+
+
+           
+         
           ack_block(bnum -1);
           }
           else if (msgtype == "BLOCK"){
@@ -327,34 +515,7 @@ public:
             //gotta parse the transaction info.
             string trid =getjsonstring(UNKNOWN_STRING,document["data"]["trace"]["id"],DISALLOW_EMPTY_VALUES);
             string status =getjsonstring(UNKNOWN_STRING,document["data"]["trace"]["status"],DISALLOW_EMPTY_VALUES);
-            //insTransactions
            
-           
-
-             //gotta parse the list of action traces
-             /*
-             {"action_ordinal":"1",
-              "receiver":"fio.address",
-              "act":{"account":"fio.address","name":"regdomain","authorization":[{"actor":"qhh25sqpktwh","permission":"active"}],
-              "data":{"fio_domain":"fiotestnet","owner_fio_public_key":"","max_fee":"40000000000","actor":"qhh25sqpktwh","tpid":""}},"context_free":"false","elapsed":"2267","console":"","account_ram_deltas":[{"account":"qhh25sqpktwh","delta":"564"}],"except":"","error_code":null},
-             
-              PKActionTraceId bigint PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-     FKTransactionId bigint references Transactions(PKTransactionId),
-     FKActionAccountId bigint REFERENCES Accounts(PKAccountId),
-     FKAccountId bigint REFERENCES Accounts(PKAccountId),
-     FKReceiverAccountId bigint REFERENCES Accounts(PKAccountId),
-    ActionOrdinal int,
-    ActionName char(12).
-    Tpid  varchar(64),
-    Fee  integer,
-    RequestData text,
-    ResponseData text,
-    Status varchar(120)
-             
-             
-             */
-
-
              const rapidjson::Value& dvtrace = document["data"]["trace"]["action_traces"];
              int64_t fktransactionid = -1; //index of transactionid
               for (const auto& object : dvtrace.GetArray()) {
@@ -851,9 +1012,14 @@ public:
                   }
                   PQclear(res);
                 } //end if action is updcryptkey
+                 else if ((actionname == "burnexpired")){
+                  burnexpiredthisblock = true;
+                  burnexpiredtrid = fktransactionid;
+                 }
                  else if ((actionname == "burnaddress")){
                   string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
                   string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["encrypt_public_key"],ALLOW_EMPTY_VALUES);
+                  burnaddresses.push_back(handle);
                   string HANDLESTATUSBURNT = "burnt";
                   string insertQuery = "SELECT updhandlesstatus('"+
                       handle +"','" +
@@ -2098,6 +2264,31 @@ public:
 
 
             }
+          }
+          else if (msgtype == "TBL_ROW"){
+            /*
+            {"msgtype":"TBL_ROW","data":{"block_num":"1757","block_timestamp":"2024-11-30T16:39:47.500","added":"true","kvo":{"code":"fio.address","scope":"fio.address","table":"domains","primary_key":"302","payer":"ab34jphizckp","value":{"id":"302","name":"ohwrmyg","domainhash":"269011327574240694548879151620142905696","account":"ab34jphizckp","is_public":0,"expiration":"1764520787"}}}}
+            */
+
+            //check that the added false and the table is domains.
+             string dataadded =getjsonstring(UNKNOWN_TIMESTAMP,document["data"]["added"],DISALLOW_EMPTY_VALUES);
+             string kvotable =getjsonstring(UNKNOWN_TIMESTAMP,document["data"]["kvo"]["table"],DISALLOW_EMPTY_VALUES);
+            
+           ilog("EDEDEDEDEDEDEDED kvo table looks like ${d}",("d",kvotable));
+
+           if(dataadded == "false" && kvotable == "domains"){
+            //take the message and put it into a list of them...process these when we see
+            //the burnexpired action....clear the list on end block
+            rapidjson::Value val;
+            domainjsons.push_back(rapidjson::Value(val, document.GetAllocator()));
+           }else  if(dataadded == "false" && kvotable == "fiohandles"){
+            //take the message and put it into a list of them...process these when we see
+            //the burnexpired action....clear the list on end block
+            rapidjson::Value val;
+            handlejsons.push_back(rapidjson::Value(val, document.GetAllocator()));
+           }
+
+
           }
           else if(msgtype == "FORK" ) {
                 //TODO:  rollback code goes here!!!!
