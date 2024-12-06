@@ -97,7 +97,7 @@ foreach(ADDITIONAL_PLUGIN_TARGET ${ADDITIONAL_PLUGINS_TARGET})
   target_link_libraries(${CHRONICLE_RECEIVER_NAME} ${PostgreSQL_LIBRARIES} ${PostgreSQL_LIBRARY_DIRS} libpq PRIVATE -Wl,${whole_archive_flag} ${ADDITIONAL_PLUGIN_TARGET} -v -Wl,${no_whole_archive_flag} -lpq )
 endforeach()
 ## Installables
-install(TARGETS ${CHRONICLE_RECEIVER_NAME} RUNTIME DESTINATION sbin)
+install(TARGETS ${CHRONICLE_RECEIVER_NAME} RUNTIME DESTINATION bin)
 install(FILES systemd/chronicle_receiver\@.service DESTINATION share)
 
 include(package.cmake)

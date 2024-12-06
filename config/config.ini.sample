@@ -1,0 +1,7 @@
+host = 127.0.0.1
+port = 8080
+mode = scan
+plugin = exp_ws_plugin
+exp-ws-host = 127.0.0.1
+exp-ws-port = 8891
+exp-ws-bin-header = false
