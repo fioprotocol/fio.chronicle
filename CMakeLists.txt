@@ -11,6 +11,14 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
+find_package(PostgreSQL REQUIRED)
+if(PostgreSQL_FOUND)
+    message(STATUS "Found PostgreSQL: ${PostgreSQL_INCLUDE_DIRS}")
+    message(STATUS "Found PostgreSQL: ${PostgreSQL_INCLUDE_DIR}")
+    message(STATUS "Found PostgreSQL: ${PostgreSQL_LIBRARY_DIRS}")
+
+endif()
+ 
 
 set(CHRONICLE_RECEIVER_NAME "chronicle-receiver" CACHE INTERNAL "")
 set(CHRONICLE_JSON_EXPORT TRUE CACHE INTERNAL "")
@@ -27,6 +35,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(PLATFORM_SPECIFIC_LIBS pthread)
 
+
+
 add_subdirectory(external/abieos EXCLUDE_FROM_ALL)
 add_subdirectory(external/leap/libraries/chainbase EXCLUDE_FROM_ALL)
 add_subdirectory(external/leap/libraries/appbase EXCLUDE_FROM_ALL)
@@ -41,6 +51,7 @@ add_executable(${CHRONICLE_RECEIVER_NAME}
 if(CHRONICLE_JSON_EXPORT)
   target_sources(${CHRONICLE_RECEIVER_NAME} PUBLIC
     chronicle-receiver/decoder_plugin.cpp
+    chronicle-receiver/exp_relic_plugin.cpp
     chronicle-receiver/exp_ws_plugin.cpp
     )
 endif()
@@ -54,11 +65,12 @@ include_directories(
   external/abieos/include
   external/leap/libraries/chainbase/include
   external/leap/libraries/libfc/include
+  ${PostgreSQL_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIR})
 
 target_link_libraries(${CHRONICLE_RECEIVER_NAME}
   PRIVATE abieos chainbase appbase fc
-  PUBLIC Boost::date_time Boost::system Boost::iostreams Boost::program_options z pthread)
+  PUBLIC ${PostgreSQL_LIBRARIES} ${PostgreSQL_LIBRARY_DIRS} Boost::date_time Boost::system Boost::iostreams Boost::program_options z pthread)
 
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -82,10 +94,8 @@ foreach(ADDITIONAL_PLUGIN_SOURCE_DIR ${CHRONICLE_RECEIVER_ADDITIONAL_PLUGINS})
 endforeach()
 
 foreach(ADDITIONAL_PLUGIN_TARGET ${ADDITIONAL_PLUGINS_TARGET})
-  target_link_libraries(${CHRONICLE_RECEIVER_NAME} PRIVATE -Wl,${whole_archive_flag} ${ADDITIONAL_PLUGIN_TARGET} -Wl,${no_whole_archive_flag} )
+  target_link_libraries(${CHRONICLE_RECEIVER_NAME} ${PostgreSQL_LIBRARIES} ${PostgreSQL_LIBRARY_DIRS} libpq PRIVATE -Wl,${whole_archive_flag} ${ADDITIONAL_PLUGIN_TARGET} -v -Wl,${no_whole_archive_flag} -lpq )
 endforeach()
-
-
 ## Installables
 install(TARGETS ${CHRONICLE_RECEIVER_NAME} RUNTIME DESTINATION sbin)
 install(FILES systemd/chronicle_receiver\@.service DESTINATION share)
