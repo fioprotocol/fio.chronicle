@@ -313,7 +313,7 @@ public:
                       }
                       string domname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["name"],ALLOW_EMPTY_VALUES);
                       string ispublic = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["is_public"],ALLOW_EMPTY_VALUES);                                
-                      string expiration = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["expiration"],ALLOW_EMPTY_VALUES);
+                      string expiration = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)object["data"]["kvo"]["value"]["expiration"],ALLOW_EMPTY_VALUES);
                       string domainbnum = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["block_num"],ALLOW_EMPTY_VALUES);
                  
                     if(bnums == domainbnum){ 
@@ -368,13 +368,8 @@ public:
                          std::cerr << "Error: Element in array is not an object." << std::endl;
                          PQfinish(conn); //TODO -- cleaner exit.
                       }
-                      /*
-                      {"msgtype":"TBL_ROW","data":{"block_num":"4557","block_timestamp":"2024-11-30T17:07:49.000","added":"true","kvo":{"code":"fio.address","scope":"fio.address","table":"fionames","primary_key":"594","payer":"1dqrdco3jhzw","value":{"id":"594","name":"nfohf@fpipqbyevp","namehash":"205290705409493029694729949301441782950","domain":"fpipqbyevp","domainhash":"276076562606947566776532857740196148755","expiration":"4294967295","owner_account":"1dqrdco3jhzw","addresses":[{"token_code":"FIO","chain_code":"FIO","public_address":"FIO67daDnkvoRwy5KPirmPuxw3rjyJDs5CFYXqRXSmuuoiseETo7c"}],"bundleeligiblecountdown":"100"}}}}
-
-                      */
-
                       string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["name"],ALLOW_EMPTY_VALUES);
-                      string expiration = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["expiration"],ALLOW_EMPTY_VALUES);
+                      string expiration = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)object["data"]["kvo"]["value"]["expiration"],ALLOW_EMPTY_VALUES);
                       string bundlecount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["bundleeligiblecountdown"],ALLOW_EMPTY_VALUES);
                       string handlebnum = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["block_num"],ALLOW_EMPTY_VALUES);
 
@@ -638,7 +633,7 @@ public:
                    
                    string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["owner_fio_public_key"],ALLOW_EMPTY_VALUES);
                   string owneracct = fioio::key_to_account(pubkey);
-                  string expirationtimestamp = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
+                  string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
                   string ispublic = "false";
                   string domainstatus = "active";
                   string insertQuery = "SELECT insdomains("+
@@ -701,7 +696,7 @@ public:
                 } //end if action is regdomain, regdomadd
                 else if ((actionname == "renewdomain")){
                   string domainname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_domain"],ALLOW_EMPTY_VALUES);                                
-                 string expirationtimestamp = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
+                 string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
                 
                   string insertQuery = "SELECT upddomainexp('"+
                       domainname+"','"+
@@ -1321,7 +1316,7 @@ public:
                   string owneracct = fioio::key_to_account(pubkey);
                   string encryptkeyisset = "false";
                   string bundledtxcount = "100";
-                  string expirationtimestamp = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
+                  string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
                   string HANDLESTATUSACTIVE = "active";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
@@ -1407,7 +1402,7 @@ public:
                 } //end if action is regaddress
                 else if ((actionname == "renewaddress")){
                   string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
-                  string expirationtimestamp = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
+                  string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
                   string HANDLEACTIVITYRENEW = "renew";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
@@ -2251,10 +2246,6 @@ public:
             }
           }
           else if (msgtype == "TBL_ROW"){
-            /*
-            {"msgtype":"TBL_ROW","data":{"block_num":"1757","block_timestamp":"2024-11-30T16:39:47.500","added":"true","kvo":{"code":"fio.address","scope":"fio.address","table":"domains","primary_key":"302","payer":"ab34jphizckp","value":{"id":"302","name":"ohwrmyg","domainhash":"269011327574240694548879151620142905696","account":"ab34jphizckp","is_public":0,"expiration":"1764520787"}}}}
-            */
-
             //check that the added false and the table is domains.
              string dataadded =getjsonstring(UNKNOWN_TIMESTAMP,document["data"]["added"],DISALLOW_EMPTY_VALUES);
              string kvotable =getjsonstring(UNKNOWN_TIMESTAMP,document["data"]["kvo"]["table"],DISALLOW_EMPTY_VALUES);
