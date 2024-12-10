@@ -1176,12 +1176,10 @@ public:
                   string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                   string payerhandle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payer_fio_address"],ALLOW_EMPTY_VALUES);  
                   string payeehandle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payee_fio_address"],ALLOW_EMPTY_VALUES);  
-                   string content = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["content"],ALLOW_EMPTY_VALUES);  
+                  string content = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["content"],ALLOW_EMPTY_VALUES);  
                   string REQUESTSTATUSSENTTOBC = "sent_to_blockchain";
                   string HANDLEACTIVITYTYRECORDOBT = "record_obt";
-                   string fiochainrequestid = getjsonstring("NULL",(rapidjson::Value&)actdata["fio_request_id"],DISALLOW_EMPTY_VALUES);                                
-
-                  
+                  string fiochainrequestid = getjsonstring("NULL",(rapidjson::Value&)actdata["fio_request_id"],DISALLOW_EMPTY_VALUES);                                
                   string insertQuery = "SELECT inshandleactivities("+
                   boost::lexical_cast<std::string>(fktransactionid)+","+
                       bnums+",'"+
