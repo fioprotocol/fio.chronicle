@@ -519,7 +519,7 @@ public:
                     continue;
                 }
                 string actionordinal = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)object["action_ordinal"],DISALLOW_EMPTY_VALUES);
-                string response = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)object["receipt"]["response"],ALLOW_EMPTY_VALUES);
+                string response = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["receipt"]["response"],ALLOW_EMPTY_VALUES);
               
                 int64_t iactordinal =  -1;
                 if(!(actionordinal == UNKNOWN_NUMBER)){
