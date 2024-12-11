@@ -62,7 +62,12 @@ inline string getjsonstring(string defaultv, rapidjson::Value& v, bool allowempt
 
     }else if (v.IsNumber()){
       ilog("EDEDEDEDEDEDEDED DOING A number!!!!");
-        return  std::to_string(v.GetInt());
+       rapidjson::StringBuffer buffer;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+        v.Accept(writer);
+        std::string numberString2 = buffer.GetString();
+        ilog("EDEDEDEDEDED returning number string  ${d}",("d",numberString2));
+        return  numberString2;
     }
   }
   return retval;

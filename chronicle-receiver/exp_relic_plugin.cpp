@@ -313,7 +313,7 @@ public:
                       }
                       string domname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["name"],ALLOW_EMPTY_VALUES);
                       string ispublic = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["is_public"],ALLOW_EMPTY_VALUES);                                
-                      string expiration = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["expiration"],ALLOW_EMPTY_VALUES);
+                      string expiration = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)object["data"]["kvo"]["value"]["expiration"],ALLOW_EMPTY_VALUES);
                       string domainbnum = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["block_num"],ALLOW_EMPTY_VALUES);
                  
                     if(bnums == domainbnum){ 
@@ -368,13 +368,8 @@ public:
                          std::cerr << "Error: Element in array is not an object." << std::endl;
                          PQfinish(conn); //TODO -- cleaner exit.
                       }
-                      /*
-                      {"msgtype":"TBL_ROW","data":{"block_num":"4557","block_timestamp":"2024-11-30T17:07:49.000","added":"true","kvo":{"code":"fio.address","scope":"fio.address","table":"fionames","primary_key":"594","payer":"1dqrdco3jhzw","value":{"id":"594","name":"nfohf@fpipqbyevp","namehash":"205290705409493029694729949301441782950","domain":"fpipqbyevp","domainhash":"276076562606947566776532857740196148755","expiration":"4294967295","owner_account":"1dqrdco3jhzw","addresses":[{"token_code":"FIO","chain_code":"FIO","public_address":"FIO67daDnkvoRwy5KPirmPuxw3rjyJDs5CFYXqRXSmuuoiseETo7c"}],"bundleeligiblecountdown":"100"}}}}
-
-                      */
-
                       string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["name"],ALLOW_EMPTY_VALUES);
-                      string expiration = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["expiration"],ALLOW_EMPTY_VALUES);
+                      string expiration = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)object["data"]["kvo"]["value"]["expiration"],ALLOW_EMPTY_VALUES);
                       string bundlecount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["bundleeligiblecountdown"],ALLOW_EMPTY_VALUES);
                       string handlebnum = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["block_num"],ALLOW_EMPTY_VALUES);
 
@@ -524,6 +519,8 @@ public:
                     continue;
                 }
                 string actionordinal = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)object["action_ordinal"],DISALLOW_EMPTY_VALUES);
+                string response = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["receipt"]["response"],ALLOW_EMPTY_VALUES);
+              
                 int64_t iactordinal =  -1;
                 if(!(actionordinal == UNKNOWN_NUMBER)){
                   iactordinal = atoi(actionordinal.c_str());
@@ -532,6 +529,12 @@ public:
                 string contractaccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["act"]["account"],DISALLOW_EMPTY_VALUES);
                 string actionname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value& )object["act"]["name"],DISALLOW_EMPTY_VALUES);
                 const rapidjson::Value& actdata = object["act"]["data"];
+                rapidjson::Document respdoc;
+                respdoc.Parse((const char*)response.c_str());
+                ilog("EDEDEDEDEDEDEDEDEDEDED getting fee amount");
+                string feeamount = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)respdoc["fee_collected"],ALLOW_EMPTY_VALUES);
+              
+
 
                 if (actdata.IsObject())
                 {
@@ -556,12 +559,8 @@ public:
                  }
                  string requestdata = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata,ALLOW_EMPTY_VALUES);
                  string maxfee = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)firstauth["actor"],DISALLOW_EMPTY_VALUES);
-                 uint64_t feecollected = 0;
-                 string responsedata = "NOT YET IMPLEMENTED integrate response into history";
-                 //TODO: add response from fio to history node and parse this!!!!
   
                 if((iactordinal == 1)&&!(actionname == "onblock")&&!(actionname == "nonce")){
-                  //select instransactions(1,'2024-01-01','transid','edacct','edacct','actnm','thistpd',300,'requestd','responsed','ok');
                   string insertQuery = "SELECT instransactions("+
                       bnums+",'"+
                       blocktimestamp+"','"+
@@ -570,14 +569,11 @@ public:
                        actionaccount+"','"+
                         actionname+"','"+
                         tpid+"',"+
-                        boost::lexical_cast<std::string>(feecollected)+",'"+
+                        feeamount+",'"+
                         requestdata+"','"+
-                        responsedata+"','"+
+                        response+"','"+
                         status+"');";
 
-                        
-
-                      //last trid+"');";
                   ilog("EDEDEDEDEDEDEDED ins transaction ${s}",("s",insertQuery));
            
                   PGresult *res = PQexec(conn, insertQuery.c_str());
@@ -637,10 +633,8 @@ public:
                    
                    string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["owner_fio_public_key"],ALLOW_EMPTY_VALUES);
                   string owneracct = fioio::key_to_account(pubkey);
+                  string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
                   string ispublic = "false";
-                  string expirationtimestamp = "1978-01-02"; //TODO integrate response from state history!!!!!
-                  //TODO integrate response!!!!!
-                  //TODO integrate response!!!!!
                   string domainstatus = "active";
                   string insertQuery = "SELECT insdomains("+
                       bnums+",'"+
@@ -702,9 +696,8 @@ public:
                 } //end if action is regdomain, regdomadd
                 else if ((actionname == "renewdomain")){
                   string domainname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_domain"],ALLOW_EMPTY_VALUES);                                
-                  string expirationtimestamp = "1978-01-02"; //TODO integrate response from state history!!!!!
-                  //TODO integrate response!!!!!
-                  //TODO integrate response!!!!!
+                 string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
+                
                   string insertQuery = "SELECT upddomainexp('"+
                       domainname+"','"+
                       expirationtimestamp +"');";
@@ -1095,11 +1088,7 @@ public:
                    string content = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["content"],ALLOW_EMPTY_VALUES);  
                   string REQUESTSTATUSPENDING = "pending";
                   string HANDLEACTIVITYTYNEWREQUEST = "new_request";
-                  string fiochainrequestid = "1";
-                  //TODO -- integrate the response and get the fio_request_id from the response.
-                  //TODO -- integrate the response and get the fio_request_id from the response.
-                  //TODO -- integrate the response and get the fio_request_id from the response.
-
+                  string fiochainrequestid = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)respdoc["fio_request_id"],ALLOW_EMPTY_VALUES);
                   
                   string insertQuery = "SELECT inshandleactivities("+
                   boost::lexical_cast<std::string>(fktransactionid)+","+
@@ -1182,15 +1171,10 @@ public:
                   string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                   string payerhandle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payer_fio_address"],ALLOW_EMPTY_VALUES);  
                   string payeehandle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payee_fio_address"],ALLOW_EMPTY_VALUES);  
-                   string content = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["content"],ALLOW_EMPTY_VALUES);  
+                  string content = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["content"],ALLOW_EMPTY_VALUES);  
                   string REQUESTSTATUSSENTTOBC = "sent_to_blockchain";
                   string HANDLEACTIVITYTYRECORDOBT = "record_obt";
-                  string fiochainrequestid = "1";
-                  //TODO -- integrate the response and get the fio_request_id from the response.
-                  //TODO -- integrate the response and get the fio_request_id from the response.
-                  //TODO -- integrate the response and get the fio_request_id from the response.
-
-                  
+                  string fiochainrequestid = getjsonstring("NULL",(rapidjson::Value&)actdata["fio_request_id"],DISALLOW_EMPTY_VALUES);                                
                   string insertQuery = "SELECT inshandleactivities("+
                   boost::lexical_cast<std::string>(fktransactionid)+","+
                       bnums+",'"+
@@ -1332,9 +1316,7 @@ public:
                   string owneracct = fioio::key_to_account(pubkey);
                   string encryptkeyisset = "false";
                   string bundledtxcount = "100";
-                  string expirationtimestamp = "1978-01-02"; //TODO integrate response from state history!!!!!
-                  //TODO integrate response!!!!!
-                  //TODO integrate response!!!!!
+                  string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
                   string HANDLESTATUSACTIVE = "active";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
@@ -1420,9 +1402,7 @@ public:
                 } //end if action is regaddress
                 else if ((actionname == "renewaddress")){
                   string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
-                  string expirationtimestamp = "1978-01-02"; //TODO integrate response from state history!!!!!
-                  //TODO integrate response!!!!!
-                  //TODO integrate response!!!!!
+                  string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
                   string HANDLEACTIVITYRENEW = "renew";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
@@ -2266,10 +2246,6 @@ public:
             }
           }
           else if (msgtype == "TBL_ROW"){
-            /*
-            {"msgtype":"TBL_ROW","data":{"block_num":"1757","block_timestamp":"2024-11-30T16:39:47.500","added":"true","kvo":{"code":"fio.address","scope":"fio.address","table":"domains","primary_key":"302","payer":"ab34jphizckp","value":{"id":"302","name":"ohwrmyg","domainhash":"269011327574240694548879151620142905696","account":"ab34jphizckp","is_public":0,"expiration":"1764520787"}}}}
-            */
-
             //check that the added false and the table is domains.
              string dataadded =getjsonstring(UNKNOWN_TIMESTAMP,document["data"]["added"],DISALLOW_EMPTY_VALUES);
              string kvotable =getjsonstring(UNKNOWN_TIMESTAMP,document["data"]["kvo"]["table"],DISALLOW_EMPTY_VALUES);
