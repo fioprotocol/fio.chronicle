@@ -424,7 +424,8 @@ public:
                           if (makehandleburnt) {
 
                              int64_t updhandleres =0;
-                             string insertQuery = "SELECT updhandleburnt('"+
+                             string insertQuery = "SELECT updhandleburnt("+
+                                    bnums+",'"+
                                     handle +"','" +
                                     bundlecount +"','" +
                                     expiration +"');";
@@ -970,7 +971,8 @@ public:
                   else if ((actionname == "updcryptkey")){
                   string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
                   string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["encrypt_public_key"],ALLOW_EMPTY_VALUES);
-                  string insertQuery = "SELECT updhandlessetencryptkey('"+
+                  string insertQuery = "SELECT updhandlessetencryptkey("+
+                      bnums+",'"+
                       handle +"','" +
                       pubkey +"');";
                       
@@ -1014,7 +1016,8 @@ public:
                   string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["encrypt_public_key"],ALLOW_EMPTY_VALUES);
                   burnaddresses.push_back(handle);
                   string HANDLESTATUSBURNT = "burnt";
-                  string insertQuery = "SELECT updhandlesstatus('"+
+                  string insertQuery = "SELECT updhandlesstatus("+
+                      bnums+",'"+
                       handle +"','" +
                       HANDLESTATUSBURNT +"');";
                       
@@ -1406,7 +1409,8 @@ public:
                   string HANDLEACTIVITYRENEW = "renew";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
-                  string insertQuery = "SELECT updhandlesrenewbundles('"+
+                  string insertQuery = "SELECT updhandlesrenewbundles("+
+                       bnums+",'"+
                       handle +"','" +
                       expirationtimestamp +"');";
                       
@@ -1449,7 +1453,8 @@ public:
                   string HANDLEACTIVITYADDBUNDLES = "add_bundles";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
-                  string insertQuery = "SELECT updhandlesaddbundles('"+
+                  string insertQuery = "SELECT updhandlesaddbundles("+
+                       bnums+",'"+
                       handle +"'," +
                       bundlesetss +");";
                       
@@ -1666,7 +1671,8 @@ public:
                   string HANDLEACTIVITYTRANSFER = "transfer";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
-                  string insertQuery = "SELECT updhandlesxferowner('"+
+                  string insertQuery = "SELECT updhandlesxferowner("+
+                       bnums+",'"+
                       handle +"','" +
                        owneracct +"','" +
                         pubkey +"','" +
@@ -1863,7 +1869,8 @@ public:
                       PQclear(res);
 
                       if (chaincode == "FIO" && (tokencode == "FIO" || tokencode == "*")){
-                          insertQuery = "SELECT updhandlesencryptkey('"+
+                          insertQuery = "SELECT updhandlesencryptkey("+
+                           bnums+",'"+
                           handle +"','" +
                           pubaddress +"');";
                           
