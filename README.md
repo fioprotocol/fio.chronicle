@@ -58,7 +58,7 @@ To clone the FIO.Chronicle repository, execute the command; `git clone --recursi
 Perform the following;
 ```shell
 cd fio.chronicle
-git checkout feature/bd-4660-buildinstall-updates
+git checkout develop
 ```
 
 ### Build and Install Instructions
