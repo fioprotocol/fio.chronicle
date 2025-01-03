@@ -2180,7 +2180,7 @@ public:
                   PQclear(res);
                 } //end if action is issue
                
-                else if(actionname ==  "newaccount"){
+               /* else if(actionname ==  "newaccount"){
                    string insertQuery = "SELECT insupdaccounts("+
                       bnums+",'"+
                       actionaccount+"','"+
@@ -2198,7 +2198,7 @@ public:
                   }
                   PQclear(res);
 
-                }
+                }*/
                 else if (actionname == "bind2eosio"){
                   string accountnm = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["account"],ALLOW_EMPTY_VALUES);                 
                   string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["client_key"],ALLOW_EMPTY_VALUES);
