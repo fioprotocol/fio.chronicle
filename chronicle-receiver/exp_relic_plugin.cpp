@@ -2179,26 +2179,6 @@ public:
                   }
                   PQclear(res);
                 } //end if action is issue
-               
-               /* else if(actionname ==  "newaccount"){
-                   string insertQuery = "SELECT insupdaccounts("+
-                      bnums+",'"+
-                      actionaccount+"','"+
-                      "UNKNOWN','"+
-                      blocktimestamp+"');";
-                      
-                  ilog("EDEDEDEDEDEDEDED ins accounts ${s}",("s",insertQuery));
-                  PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins accounts result status ${r} ",("r",PQresultStatus(res)));
-                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into accounts failed ");
-                    PQclear(res);
-                    PQfinish(conn);
-                    return;
-                  }
-                  PQclear(res);
-
-                }*/
                 else if (actionname == "bind2eosio"){
                   string accountnm = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["account"],ALLOW_EMPTY_VALUES);                 
                   string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["client_key"],ALLOW_EMPTY_VALUES);
