@@ -1257,6 +1257,7 @@ public:
                     fiochainrequestid+",'"+
                     REQUESTSTATUSSENTTOBC+"');";
 
+ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
                   ilog("updfiorequestsstatus result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -1295,7 +1296,7 @@ public:
                   insertQuery = "SELECT updfiorequestsstatus("+
                     fiochainrequestid+",'"+
                     REQUESTSTATUSCANCEL+"');";
-
+ ilog("EDEDEDEDEDEDEDED ins updfiorequestsstatus ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
                   ilog("updfiorequestsstatus result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
