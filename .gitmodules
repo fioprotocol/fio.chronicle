@@ -1,7 +1,7 @@
 [submodule "external/abieos"]
 	path = external/abieos
-	url = https://github.com/AntelopeIO/abieos.git
-	branch = main
+	url = git@github.com:fioprotocol/fio.abieos.git
+	branch = feature/fio.chronicle-support
 [submodule "external/leap"]
 	path = external/leap
 	url = https://github.com/AntelopeIO/leap.git
