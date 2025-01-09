@@ -424,7 +424,8 @@ public:
                           if (makehandleburnt) {
 
                              int64_t updhandleres =0;
-                             string insertQuery = "SELECT updhandleburnt('"+
+                             string insertQuery = "SELECT updhandleburnt("+
+                                    bnums+",'"+
                                     handle +"','" +
                                     bundlecount +"','" +
                                     expiration +"');";
@@ -970,7 +971,8 @@ public:
                   else if ((actionname == "updcryptkey")){
                   string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
                   string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["encrypt_public_key"],ALLOW_EMPTY_VALUES);
-                  string insertQuery = "SELECT updhandlessetencryptkey('"+
+                  string insertQuery = "SELECT updhandlessetencryptkey("+
+                      bnums+",'"+
                       handle +"','" +
                       pubkey +"');";
                       
@@ -1014,7 +1016,8 @@ public:
                   string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["encrypt_public_key"],ALLOW_EMPTY_VALUES);
                   burnaddresses.push_back(handle);
                   string HANDLESTATUSBURNT = "burnt";
-                  string insertQuery = "SELECT updhandlesstatus('"+
+                  string insertQuery = "SELECT updhandlesstatus("+
+                      bnums+",'"+
                       handle +"','" +
                       HANDLESTATUSBURNT +"');";
                       
@@ -1254,6 +1257,7 @@ public:
                     fiochainrequestid+",'"+
                     REQUESTSTATUSSENTTOBC+"');";
 
+ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
                   ilog("updfiorequestsstatus result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -1292,7 +1296,7 @@ public:
                   insertQuery = "SELECT updfiorequestsstatus("+
                     fiochainrequestid+",'"+
                     REQUESTSTATUSCANCEL+"');";
-
+ ilog("EDEDEDEDEDEDEDED ins updfiorequestsstatus ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
                   ilog("updfiorequestsstatus result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -1406,7 +1410,8 @@ public:
                   string HANDLEACTIVITYRENEW = "renew";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
-                  string insertQuery = "SELECT updhandlesrenewbundles('"+
+                  string insertQuery = "SELECT updhandlesrenewbundles("+
+                       bnums+",'"+
                       handle +"','" +
                       expirationtimestamp +"');";
                       
@@ -1449,7 +1454,8 @@ public:
                   string HANDLEACTIVITYADDBUNDLES = "add_bundles";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
-                  string insertQuery = "SELECT updhandlesaddbundles('"+
+                  string insertQuery = "SELECT updhandlesaddbundles("+
+                       bnums+",'"+
                       handle +"'," +
                       bundlesetss +");";
                       
@@ -1666,7 +1672,8 @@ public:
                   string HANDLEACTIVITYTRANSFER = "transfer";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
-                  string insertQuery = "SELECT updhandlesxferowner('"+
+                  string insertQuery = "SELECT updhandlesxferowner("+
+                       bnums+",'"+
                       handle +"','" +
                        owneracct +"','" +
                         pubkey +"','" +
@@ -1863,7 +1870,8 @@ public:
                       PQclear(res);
 
                       if (chaincode == "FIO" && (tokencode == "FIO" || tokencode == "*")){
-                          insertQuery = "SELECT updhandlesencryptkey('"+
+                          insertQuery = "SELECT updhandlesencryptkey("+
+                           bnums+",'"+
                           handle +"','" +
                           pubaddress +"');";
                           
@@ -2172,26 +2180,6 @@ public:
                   }
                   PQclear(res);
                 } //end if action is issue
-               
-                else if(actionname ==  "newaccount"){
-                   string insertQuery = "SELECT insupdaccounts("+
-                      bnums+",'"+
-                      actionaccount+"','"+
-                      "UNKNOWN','"+
-                      blocktimestamp+"');";
-                      
-                  ilog("EDEDEDEDEDEDEDED ins accounts ${s}",("s",insertQuery));
-                  PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins accounts result status ${r} ",("r",PQresultStatus(res)));
-                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into accounts failed ");
-                    PQclear(res);
-                    PQfinish(conn);
-                    return;
-                  }
-                  PQclear(res);
-
-                }
                 else if (actionname == "bind2eosio"){
                   string accountnm = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["account"],ALLOW_EMPTY_VALUES);                 
                   string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["client_key"],ALLOW_EMPTY_VALUES);
