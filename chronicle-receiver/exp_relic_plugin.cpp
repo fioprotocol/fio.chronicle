@@ -430,11 +430,11 @@ public:
                                     bundlecount +"','" +
                                     expiration +"');";
                                     
-                                ilog("EDEDEDEDEDEDEDED updhandleburnt ${s}",("s",insertQuery));
                                 PGresult *res = PQexec(conn, insertQuery.c_str());
-                                ilog("updhandleburnt result status ${r} ",("r",PQresultStatus(res)));
                                 if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                                  ilog("updhandleburnt failed ");
+                                  ilog("ERROR -- updhandleburnt ${s}",("s",insertQuery));
+                                  ilog("RESULT -- updhandleburnt result status ${r} ",("r",PQresultStatus(res)));
+                                  ilog("updhandleburnt failed -- fio.chronicle exp_relic_plugin will be stopped. ");
                                   PQclear(res);
                                   PQfinish(conn);
                                   return;
