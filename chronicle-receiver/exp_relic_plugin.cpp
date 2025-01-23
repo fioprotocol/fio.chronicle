@@ -505,8 +505,8 @@ public:
             string trid =getjsonstring(UNKNOWN_STRING,document["data"]["trace"]["id"],DISALLOW_EMPTY_VALUES);
             string status =getjsonstring(UNKNOWN_STRING,document["data"]["trace"]["status"],DISALLOW_EMPTY_VALUES);
            
-             const rapidjson::Value& dvtrace = document["data"]["trace"]["action_traces"];
-             string tracesstr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)document["data"]["trace"],ALLOW_EMPTY_VALUES);
+            const rapidjson::Value& dvtrace = document["data"]["trace"]["action_traces"];
+            // string tracesstr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)document["data"]["trace"],ALLOW_EMPTY_VALUES);
              //    ilog(" actdata looks like ${d}",("d",tracesstr)); 
              int64_t fktransactionid = -1; //index of transactionid
               for (const auto& object : dvtrace.GetArray()) {
@@ -536,10 +536,6 @@ public:
                 respdoc.Parse((const char*)response.c_str());
                 string feeamount = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)respdoc["fee_collected"],ALLOW_EMPTY_VALUES);
               
-                if (actdata.IsObject())
-                {
-                   string actdatastr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata,ALLOW_EMPTY_VALUES);
-                }
                 const rapidjson::Value& arrayauth = object["act"]["authorization"];
                 rapidjson::Value& firstauth = (rapidjson::Value&)object;
                 
@@ -1797,7 +1793,7 @@ public:
 
 
                if ((actionname == "transfer")&&(receiveraccount == "fio.token")){
-                 string actdatastr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata,ALLOW_EMPTY_VALUES);
+                // string actdatastr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata,ALLOW_EMPTY_VALUES);
                //  ilog(" actdata looks like ${d}",("d",actdatastr)); 
                //   ilog(" action ordinal looks like ${d}",("d",actionordinal)); 
                 
