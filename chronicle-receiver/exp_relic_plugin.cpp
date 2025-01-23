@@ -101,12 +101,10 @@ public:
     conn = PQconnectdb(conninfo);
 
     if (PQstatus(conn) != CONNECTION_OK) {
-        ilog("failed to connect to relic database!");
+        ilog("failed to connect to relic database exp_relic_plugin will now terminate.");
         PQfinish(conn);
         return;
     }
-
-    ilog ("connected to relic db!!");
 
     if (use_bin_headers) {
       _js_forks_subscription =
@@ -240,6 +238,18 @@ public:
 
 
 
+  void  terminalerror(
+      string uniqueident,
+      string querystr,
+      PGconn *dbconn,
+      PGresult *results){
+      ilog ("Error unique ident -- ${i}",("i",uniqueident));
+      ilog("Error during -- ${s}",("s",querystr));
+      ilog("Error result status -- ${r} ",("r",boost::lexical_cast<std::string>(PQresultStatus(results))));
+      ilog("Error -- exp_relic_plugin execution will be terminated. "); 
+      PQclear(results);
+      PQfinish(dbconn);
+  }
 
 //send events to the relic database here.
 //relic
@@ -274,6 +284,13 @@ public:
 
       rapidjson::Document document;
       document.Parse((const char*)async_msg->data(),async_msg->size());
+    //  rapidjson::StringBuffer strbuf;
+    //   strbuf.Clear();
+
+    //   rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+    //   document.Accept(writer);
+    //   std::string dString = strbuf.GetString();
+    //   ilog(" document looks like ${s}",("s",dString));
 
     // Check if parsing was successful
     if (document.HasParseError()) {
@@ -284,15 +301,13 @@ public:
         document.HasMember("data") && 
         document["data"].IsObject() 
      ){
+    
 
          //output the msg
-         rapidjson::StringBuffer buffer;
-         rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+       //  rapidjson::StringBuffer buffer;
+       //  rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
         // Serialize the document to JSON
-        document.Accept(writer);
-        ilog (buffer.GetString());
-
-        
+       // document.Accept(writer);
         const string msgtype = document["msgtype"].GetString();
         const rapidjson::Value& dataj = document["data"];
         if (
@@ -300,6 +315,7 @@ public:
             dataj["block_num"].IsString()
     
         ) {
+        //  ilog(" msgtype ${m}",("m",msgtype));
           uint32_t bnum =static_cast<uint32_t>(std::stoul( document["data"]["block_num"].GetString()));
           string bnums =document["data"]["block_num"].GetString();
           if (msgtype == "BLOCK_COMPLETED"){
@@ -323,14 +339,10 @@ public:
                               ispublic +"','" +
                               expiration +"');";
                               
-                          ilog("EDEDEDEDEDEDEDED upddomainburnt ${s}",("s",insertQuery));
                           PGresult *res = PQexec(conn, insertQuery.c_str());
-                          ilog("upddomainburnt result status ${r} ",("r",PQresultStatus(res)));
                           if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                            ilog("upddomainburnt failed ");
-                            PQclear(res);
-                            PQfinish(conn);
-                            return;
+                             terminalerror("burndomain",insertQuery,conn,res);
+                             return;
                           }
                            if (PQgetvalue(res, 0, 0)) {
                                     updburntres = atoi(PQgetvalue(res, 0, 0));
@@ -347,13 +359,9 @@ public:
                                   DOMAINACTIVITYAUTOBURN+"','"+
                                   burnexpiredtimestamp+"');";
                                   
-                              ilog("EDEDEDEDEDEDEDED ins domainactivities ${s}",("s",insertQuery));
                               res = PQexec(conn, insertQuery.c_str());
-                              ilog("ins domainactivities result status ${r} ",("r",PQresultStatus(res)));
                               if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                                ilog("insert into domainactivities failed ");
-                                PQclear(res);
-                                PQfinish(conn);
+                               terminalerror("burndomainactivity",insertQuery,conn,res);
                                 return;
                               }
                               PQclear(res);
@@ -400,13 +408,10 @@ public:
                                     tokencode +"','" +
                                     publicaddress +"');";
                                     
-                                ilog("EDEDEDEDEDEDEDED existspubaddress ${s}",("s",insertQuery));
                                 PGresult *res = PQexec(conn, insertQuery.c_str());
-                                ilog("existspubaddress result status ${r} ",("r",PQresultStatus(res)));
                                 if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                                  ilog("existspubaddress failed ");
-                                  PQclear(res);
-                                  PQfinish(conn);
+                                 terminalerror("burndomainpubaddrexists",insertQuery,conn,res);
+                                 
                                   return;
                                 }
 
@@ -432,11 +437,7 @@ public:
                                     
                                 PGresult *res = PQexec(conn, insertQuery.c_str());
                                 if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                                  ilog("ERROR -- updhandleburnt ${s}",("s",insertQuery));
-                                  ilog("RESULT -- updhandleburnt result status ${r} ",("r",PQresultStatus(res)));
-                                  ilog("updhandleburnt failed -- fio.chronicle exp_relic_plugin will be stopped. ");
-                                  PQclear(res);
-                                  PQfinish(conn);
+                                  terminalerror("burnhandle",insertQuery,conn,res);
                                   return;
                                 }
 
@@ -454,13 +455,9 @@ public:
                                           HANDLECTIVITYAUTOBURN+"','"+
                                           burnexpiredtimestamp+"');";
                                           
-                                      ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
                                       res = PQexec(conn, insertQuery.c_str());
-                                      ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
                                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                                        ilog("insert into handleactivities failed ");
-                                        PQclear(res);
-                                        PQfinish(conn);
+                                        terminalerror("burnhandleactivity",insertQuery,conn,res);
                                         return;
                                       }
                                       PQclear(res);
@@ -491,14 +488,10 @@ public:
            string bid = getjsonstring(UNKNOWN_STRING,document["data"]["block_id"],DISALLOW_EMPTY_VALUES);
           
            string insertQuery = "SELECT insblocks("+bnums+",'"+btimestamp+"','"+bid+"','"+bproducer+"','"+bschedv+"');";
-            ilog("EDEDEDEDEDEDEDED ins block ${s}",("s",insertQuery));
            
             PGresult *res = PQexec(conn, insertQuery.c_str());
-            ilog("ins block result status ${r} ",("r",PQresultStatus(res)));
             if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-              ilog("insert into blocks failed ");
-                PQclear(res);
-                PQfinish(conn);
+              terminalerror("insblock",insertQuery,conn,res);
                 return;
             }
 
@@ -513,18 +506,27 @@ public:
             string status =getjsonstring(UNKNOWN_STRING,document["data"]["trace"]["status"],DISALLOW_EMPTY_VALUES);
            
              const rapidjson::Value& dvtrace = document["data"]["trace"]["action_traces"];
+             string tracesstr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)document["data"]["trace"],ALLOW_EMPTY_VALUES);
+             //    ilog(" actdata looks like ${d}",("d",tracesstr)); 
              int64_t fktransactionid = -1; //index of transactionid
               for (const auto& object : dvtrace.GetArray()) {
                 if (!object.IsObject()) {
                     std::cerr << "Error: Element in array is not an object." << std::endl;
                     continue;
                 }
+
                 string actionordinal = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)object["action_ordinal"],DISALLOW_EMPTY_VALUES);
+                string creatoractionordinal = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)object["creator_action_ordinal"],DISALLOW_EMPTY_VALUES);
+               
                 string response = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["receipt"]["response"],ALLOW_EMPTY_VALUES);
-              
+             // ilog(" act ordinal ${o}",("o",actionordinal));
                 int64_t iactordinal =  -1;
                 if(!(actionordinal == UNKNOWN_NUMBER)){
                   iactordinal = atoi(actionordinal.c_str());
+                }
+                 int64_t icactordinal =  -1;
+                if(!(creatoractionordinal == UNKNOWN_NUMBER)){
+                  icactordinal = atoi(creatoractionordinal.c_str());
                 }
                 string receiveraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["receiver"],DISALLOW_EMPTY_VALUES);
                 string contractaccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["act"]["account"],DISALLOW_EMPTY_VALUES);
@@ -532,23 +534,16 @@ public:
                 const rapidjson::Value& actdata = object["act"]["data"];
                 rapidjson::Document respdoc;
                 respdoc.Parse((const char*)response.c_str());
-                ilog("EDEDEDEDEDEDEDEDEDEDED getting fee amount");
                 string feeamount = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)respdoc["fee_collected"],ALLOW_EMPTY_VALUES);
               
-
-
                 if (actdata.IsObject())
                 {
-                  ilog("EDEDEEEDEDEDEDED actdata is object!!");
                    string actdatastr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata,ALLOW_EMPTY_VALUES);
-               ilog("EDEDEDEDEDEDEDED actdata looks like ${d}",("d",actdatastr));
-              
                 }
                 const rapidjson::Value& arrayauth = object["act"]["authorization"];
                 rapidjson::Value& firstauth = (rapidjson::Value&)object;
                 
                  if (arrayauth.IsArray() && (arrayauth.Size() > 0)){
-                  ilog("EDEDEEEDEDEDEDEDEDEDED found the act authorization!!!!");
                    firstauth = (rapidjson::Value&)arrayauth[0];
                  }
 
@@ -561,7 +556,9 @@ public:
                  string requestdata = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata,ALLOW_EMPTY_VALUES);
                  string maxfee = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)firstauth["actor"],DISALLOW_EMPTY_VALUES);
   
-                if((iactordinal == 1)&&!(actionname == "onblock")&&!(actionname == "nonce")){
+                if((icactordinal == 0)&&!(actionname == "onblock")&&!(actionname == "nonce")){
+                
+               
                   string insertQuery = "SELECT instransactions("+
                       bnums+",'"+
                       blocktimestamp+"','"+
@@ -574,19 +571,14 @@ public:
                         requestdata+"','"+
                         response+"','"+
                         status+"');";
-
-                  ilog("EDEDEDEDEDEDEDED ins transaction ${s}",("s",insertQuery));
-           
+                
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins transaction result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into transactions failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                    terminalerror("instransactions",insertQuery,conn,res);
                     return;
                   }
 
-            
+         
                   if (PQgetvalue(res, 0, 0)) {
                       fktransactionid = atoi(PQgetvalue(res, 0, 0));
                   }
@@ -606,7 +598,6 @@ public:
                     trnstype = TRNSTYPETRANSFERLOCKED;
                   }
                   string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["amount"],ALLOW_EMPTY_VALUES);
-                  ilog("EDEDEDEDEDEDEDED key_to_account account ${s}",("s",payeeacct));
                   string insertQuery = "SELECT instokentransfers("+
                        boost::lexical_cast<std::string>(fktransactionid)+","+
                       bnums+",'"+
@@ -617,13 +608,9 @@ public:
                       +"UNKNOWN','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins tokentransfers ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins tokentransfers result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into token transfers failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                    terminalerror("locktokentransfer",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -645,13 +632,9 @@ public:
                       expirationtimestamp+"','"+
                       domainstatus +"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins domains ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins domains result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into domains failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                    terminalerror("regdomain",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -665,13 +648,9 @@ public:
                       DOMAINACTIVITYREGISTER+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins domainactivities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins domainactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into domainactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                    terminalerror("regdomainactivity",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -683,13 +662,9 @@ public:
                       owneracct+"','"+
                       +"receiver');";
                       
-                      ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
                       res = PQexec(conn, insertQuery.c_str());
-                      ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                        ilog("insert into account activities failed ");
-                        PQclear(res);
-                        PQfinish(conn);
+                        terminalerror("regdomainaccountactivity",insertQuery,conn,res);
                         return;
                       }
                       PQclear(res);
@@ -703,14 +678,10 @@ public:
                       domainname+"','"+
                       expirationtimestamp +"');";
                       
-                  ilog("EDEDEDEDEDEDEDED upd domains ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("upd domains result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("update domains failed ");
-                    PQclear(res);
-                    PQfinish(conn);
-                    return;
+                    terminalerror("renewdomain",insertQuery,conn,res);
+                   return;
                   }
                   PQclear(res);
 
@@ -723,13 +694,9 @@ public:
                       DOMAINACTIVITYRENEW+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins domainactivities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins domainactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into domainactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                    terminalerror("renewdomainactivity",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -743,13 +710,9 @@ public:
                       domainname+"','"+
                       owneracct +"');";
                       
-                  ilog("EDEDEDEDEDEDEDED upd domains ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("upd domains result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("update domains failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                    terminalerror("xferdomain",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -763,13 +726,9 @@ public:
                       DOMAINACTIVITYTRANSFER+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins domainactivities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins domainactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into domainactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                    terminalerror("xferdomainactivity",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -780,13 +739,9 @@ public:
                       owneracct+"','"+
                       +"receiver');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into account activities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("xferdomainaccountactivity",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -800,13 +755,9 @@ public:
                       domainname+"','"+
                       publicstr +"');";
                       
-                  ilog("EDEDEDEDEDEDEDED upd domains ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("upd domains result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("update domains failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("setdomainpub",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -825,13 +776,9 @@ public:
                       activitytype+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins domainactivities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins domainactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into domainactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("setdomainpubdomainactivity",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -844,13 +791,9 @@ public:
                       domainname+"','"+
                       acctstr +"');";
                       
-                  ilog("EDEDEDEDEDEDEDED upd domains ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("upd domains result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("update domains failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("wrapdomain",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -865,13 +808,9 @@ public:
                       DOMAINACTIVITYWRAP+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins domainactivities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins domainactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into domainactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                    terminalerror("wrapdomainactivity",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -882,13 +821,9 @@ public:
                       acctstr+"','"+
                       +"receiver');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into account activities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("wrapdomainaccountactivity",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -902,13 +837,9 @@ public:
                       domainname+"','"+
                       owneracct +"');";
                       
-                  ilog("EDEDEDEDEDEDEDED upd domains ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("upd domains result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("update domains failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                  terminalerror("xferescrow",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -923,13 +854,9 @@ public:
                       DOMAINACTIVITYUNWRAP+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins domainactivities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins domainactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into domainactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("xferescrowdomainactivity",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -940,13 +867,9 @@ public:
                       owneracct+"','"+
                       +"receiver');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into account activities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                  terminalerror("xferescrowowneraccountactivity",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -957,13 +880,9 @@ public:
                       oracleacct+"','"+
                       +"sender');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into account activities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("xferescroworacleaccountactivity",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -976,13 +895,9 @@ public:
                       handle +"','" +
                       pubkey +"');";
                       
-                  ilog("EDEDEDEDEDEDEDED upd handles ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("upd handles result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("update handles failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("updcryptkey",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -996,13 +911,9 @@ public:
                       HANDLEACTIVITYTYUPDATEENCRYPTKEY+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into handleactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("updcryptkeyhandleactivity",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1021,13 +932,9 @@ public:
                       handle +"','" +
                       HANDLESTATUSBURNT +"');";
                       
-                  ilog("EDEDEDEDEDEDEDED upd handles ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("upd handles result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("update handles failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("burnaddress",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1041,13 +948,9 @@ public:
                       HANDLEACTIVITYTYSELFBURN+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into handleactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("burnaddresshandleactivity",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1055,13 +958,9 @@ public:
                    insertQuery = "SELECT delpubaddresses('"+
                       handle+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED del pubaddresses ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("del pubaddresses result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("del pubaddresses failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("burnaddressdelpubaddresses",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1069,13 +968,9 @@ public:
                    insertQuery = "SELECT delnftsignatures('"+
                       handle+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED delnftsignatures ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("delnftsignatures result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("delnftsignatures failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("burnaddressdelnftsigs",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1100,13 +995,9 @@ public:
                       HANDLEACTIVITYTYNEWREQUEST+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into handleactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("newfundsreq",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1118,13 +1009,9 @@ public:
                       actoraccount+"','"+
                       +"receiver');";
                       
-                      ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
                       res = PQexec(conn, insertQuery.c_str());
-                      ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                        ilog("insert into account activities failed ");
-                        PQclear(res);
-                        PQfinish(conn);
+                       terminalerror("newfundsreqaccountactivity",insertQuery,conn,res);
                         return;
                       }
                       PQclear(res);
@@ -1135,13 +1022,9 @@ public:
                       payerhandle+"','"+
                       +"receiver');";
                       
-                      ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
                       res = PQexec(conn, insertQuery.c_str());
-                      ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                        ilog("insert into account activities failed ");
-                        PQclear(res);
-                        PQfinish(conn);
+                       terminalerror("newfundsreqinsaccountacthandle",insertQuery,conn,res);
                         return;
                       }
                       PQclear(res);
@@ -1157,13 +1040,9 @@ public:
                        blocktimestamp+"');";
                      
                       
-                      ilog("EDEDEDEDEDEDEDED insfiorequests ${s}",("s",insertQuery));
                       res = PQexec(conn, insertQuery.c_str());
-                      ilog("insfiorequests result status ${r} ",("r",PQresultStatus(res)));
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                        ilog("insfiorequests activities failed ");
-                        PQclear(res);
-                        PQfinish(conn);
+                        terminalerror("newfundsreqinfiorequests",insertQuery,conn,res);
                         return;
                       }
                       PQclear(res);
@@ -1185,13 +1064,9 @@ public:
                       HANDLEACTIVITYTYRECORDOBT+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into handleactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("recordobt",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1203,13 +1078,9 @@ public:
                       actoraccount+"','"+
                       +"receiver');";
                       
-                      ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
                       res = PQexec(conn, insertQuery.c_str());
-                      ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                        ilog("insert into account activities failed ");
-                        PQclear(res);
-                        PQfinish(conn);
+                       terminalerror("recordobtaccountactivity",insertQuery,conn,res);
                         return;
                       }
                       PQclear(res);
@@ -1220,13 +1091,9 @@ public:
                       payerhandle+"','"+
                       +"receiver');";
                       
-                      ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
                       res = PQexec(conn, insertQuery.c_str());
-                      ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                        ilog("insert into account activities failed ");
-                        PQclear(res);
-                        PQfinish(conn);
+                       terminalerror("recordobtaccountacthandle",insertQuery,conn,res);
                         return;
                       }
                       PQclear(res);
@@ -1242,13 +1109,9 @@ public:
                        blocktimestamp+"');";
                      
                       
-                      ilog("EDEDEDEDEDEDEDED insfiorequests ${s}",("s",insertQuery));
                       res = PQexec(conn, insertQuery.c_str());
-                      ilog("insfiorequests result status ${r} ",("r",PQresultStatus(res)));
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                        ilog("insfiorequests activities failed ");
-                        PQclear(res);
-                        PQfinish(conn);
+                      terminalerror("recordobtfiodatas",insertQuery,conn,res);
                         return;
                       }
                       PQclear(res);
@@ -1257,13 +1120,9 @@ public:
                     fiochainrequestid+",'"+
                     REQUESTSTATUSSENTTOBC+"');";
 
-ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("updfiorequestsstatus result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("updfiorequestsstatus failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("recordobtfioreqstatus",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1281,13 +1140,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       HANDLEACTIVITYTYCANCELREQUEST+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into handleactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("cancelfndreqhandleact",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1296,13 +1151,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                   insertQuery = "SELECT updfiorequestsstatus("+
                     fiochainrequestid+",'"+
                     REQUESTSTATUSCANCEL+"');";
- ilog("EDEDEDEDEDEDEDED ins updfiorequestsstatus ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("updfiorequestsstatus result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("updfiorequestsstatus failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("cancelfundreqfioreqstatus",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1335,13 +1186,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       expirationtimestamp +"','" +
                       HANDLESTATUSACTIVE +"');";
                       
-                  ilog("EDEDEDEDEDEDEDED upd handles ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("upd handles result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("update handles failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("regaddress",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1355,13 +1202,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       HANDLEACTIVITYTYPEREGISTER+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into handleactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                  terminalerror("regaddresshandleact",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1373,13 +1216,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       owneracct+"','"+
                       +"receiver');";
                       
-                      ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
                       res = PQexec(conn, insertQuery.c_str());
-                      ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                        ilog("insert into account activities failed ");
-                        PQclear(res);
-                        PQfinish(conn);
+                       terminalerror("regaddressaccountact",insertQuery,conn,res);
                         return;
                       }
                       PQclear(res);
@@ -1393,13 +1232,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                         tokencode+"','"+
                          pubkey+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins pubaddresses ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins pubaddresses result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into pubaddresses failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("regaddressinspubaddr",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1415,13 +1250,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       handle +"','" +
                       expirationtimestamp +"');";
                       
-                  ilog("EDEDEDEDEDEDEDED upd handles ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("upd handles result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("update handles failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("renewaddr",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1435,13 +1266,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       HANDLEACTIVITYRENEW+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into handleactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("renewaddrhandleact",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1459,13 +1286,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       handle +"'," +
                       bundlesetss +");";
                       
-                  ilog("EDEDEDEDEDEDEDED upd handles ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("upd handles result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("update handles failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("addbundles",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1477,13 +1300,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       HANDLEACTIVITYADDBUNDLES+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into handleactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("addbundleshandleact",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1504,13 +1323,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       HANDLEACTIVITYADDNFT+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into handleactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                    terminalerror("addnft",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1526,9 +1341,7 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                     if (nftdata.IsObject())
                     {
                       
-                      ilog("EDEDEEEDEDEDEDED nftdata is object!!");
                       string nftdatastr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata,ALLOW_EMPTY_VALUES);
-                      ilog("EDEDEDEDEDEDEDED nftdata looks like ${d}",("d",nftdatastr));
                       string chaincode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["chain_code"],ALLOW_EMPTY_VALUES);                                
                       string contractaddress = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["contract_address"],ALLOW_EMPTY_VALUES);                                
                       string tokenid = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["token_id"],ALLOW_EMPTY_VALUES);                                
@@ -1546,20 +1359,16 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                             hash+"','"+
                             metadata+"');";
                           
-                      ilog("EDEDEDEDEDEDEDED insupd nftsignatures ${s}",("s",insertQuery));
                       res = PQexec(conn, insertQuery.c_str());
-                      ilog("insupd nftsignatures result status ${r} ",("r",PQresultStatus(res)));
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                        ilog("insertupd into nftsignatures failed ");
-                        PQclear(res);
-                        PQfinish(conn);
+                       terminalerror("addnftinsupnftsigs",insertQuery,conn,res);
                         return;
                       }
                       PQclear(res);
 
                       
                     }else {
-                      ilog ("EDEDEDEDED nfts parse error!!!");
+                      ilog ("FATAL error -- nfts parse error!!!");
                       PQfinish(conn);
                     }
                   } //end loop over nfts.
@@ -1574,13 +1383,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       HANDLEACTIVITYREMNFT+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into handleactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("remnft",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1596,9 +1401,7 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                     if (nftdata.IsObject())
                     {
                       
-                      ilog("EDEDEEEDEDEDEDED nftdata is object!!");
                       string nftdatastr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata,ALLOW_EMPTY_VALUES);
-                      ilog("EDEDEDEDEDEDEDED nftdata looks like ${d}",("d",nftdatastr));
                       string chaincode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["chain_code"],ALLOW_EMPTY_VALUES);                                
                       string contractaddress = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["contract_address"],ALLOW_EMPTY_VALUES);                                
                       string tokenid = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["token_id"],ALLOW_EMPTY_VALUES);                                
@@ -1609,20 +1412,16 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                           contractaddress+"','"+
                             tokenid+"');";
                           
-                      ilog("EDEDEDEDEDEDEDED del nftsignatures ${s}",("s",insertQuery));
                       res = PQexec(conn, insertQuery.c_str());
-                      ilog("del nftsignatures result status ${r} ",("r",PQresultStatus(res)));
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                        ilog("del  nftsignatures failed ");
-                        PQclear(res);
-                        PQfinish(conn);
+                        terminalerror("remnftdelnftsig",insertQuery,conn,res);
                         return;
                       }
                       PQclear(res);
 
                       
                     }else {
-                      ilog ("EDEDEDEDED nfts parse error!!!");
+                      ilog ("fatal error remnft-- nfts parse error!!!");
                       PQfinish(conn);
                     }
                   } //end loop over nfts.
@@ -1637,13 +1436,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       HANDLEACTIVITYREMALLNFT+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into handleactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("remallnfts",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1651,13 +1446,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                   insertQuery = "SELECT delnftsignatures('"+
                       handle+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED delnftsignatures ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("delnftsignatures result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("delnftsignatures failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("remallnftsdelnftsigs",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1679,13 +1470,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                         pubkey +"','" +
                          encryptkeyisset +"');";
                       
-                  ilog("EDEDEDEDEDEDEDED upd handles ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("upd handles result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("update handles failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                  terminalerror("xferaddress",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1697,13 +1484,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       HANDLEACTIVITYTRANSFER+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into handleactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("xferaddresshandleact",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1714,13 +1497,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                   owneracct+"','"+
                   +"receiver');";
                   
-                  ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into account activities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("xferaddressaccountact",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1728,13 +1507,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                    insertQuery = "SELECT delpubaddresses('"+
                       handle+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED del pubaddresses ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("del pubaddresses result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("del pubaddresses failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("xferaddressdelpubaddrs",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1748,13 +1523,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                         tokencode+"','"+
                          pubkey+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins pubaddresses ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins pubaddresses result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into pubaddresses failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("xferaddressinspubaddrs",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1762,13 +1533,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                    insertQuery = "SELECT delnftsignatures('"+
                       handle+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED del nftsignatures ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("del nftsignatures result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("del nftsignatures failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("xferaddressdelnftsigs",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1786,13 +1553,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       HANDLEACTIVITYREMALLPUBADDR+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into handleactivities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("remalladdr",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1801,13 +1564,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                    insertQuery = "SELECT delpubaddresses('"+
                       handle+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED del pubaddresses ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("del pubaddresses result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("del pubaddresses failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                   terminalerror("remalladdrdelpubaddrs",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1826,9 +1585,7 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                     if (addressdata.IsObject())
                     {
                       string HANDLEACTIVITYADDPUBADD = "add_pubadd";
-                      ilog("EDEDEEEDEDEDEDED actdata is object!!");
                       string addressdatastr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata,ALLOW_EMPTY_VALUES);
-                      ilog("EDEDEDEDEDEDEDED addressdata looks like ${d}",("d",addressdatastr));
                       string chaincode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata["chain_code"],ALLOW_EMPTY_VALUES);                                
                       string tokencode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata["token_code"],ALLOW_EMPTY_VALUES);                                
                       string pubaddress = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata["public_address"],ALLOW_EMPTY_VALUES);                                
@@ -1840,13 +1597,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                           HANDLEACTIVITYADDPUBADD+"','"+
                           blocktimestamp+"');";
                           
-                      ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
                       PGresult *res = PQexec(conn, insertQuery.c_str());
-                      ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                        ilog("insert into handleactivities failed ");
-                        PQclear(res);
-                        PQfinish(conn);
+                       terminalerror("addaddress",insertQuery,conn,res);
                         return;
                       }
                       PQclear(res);
@@ -1858,13 +1611,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                             tokencode+"','"+
                             pubaddress+"');";
                           
-                      ilog("EDEDEDEDEDEDEDED ins pubaddresses ${s}",("s",insertQuery));
                       res = PQexec(conn, insertQuery.c_str());
-                      ilog("ins pubaddresses result status ${r} ",("r",PQresultStatus(res)));
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                        ilog("insert into pubaddresses failed ");
-                        PQclear(res);
-                        PQfinish(conn);
+                        terminalerror("addaddressinspubaddr",insertQuery,conn,res);
                         return;
                       }
                       PQclear(res);
@@ -1875,19 +1624,15 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                           handle +"','" +
                           pubaddress +"');";
                           
-                        ilog("EDEDEDEDEDEDEDED upd handles ${s}",("s",insertQuery));
                         res = PQexec(conn, insertQuery.c_str());
-                        ilog("upd handles result status ${r} ",("r",PQresultStatus(res)));
                         if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                          ilog("update handles failed ");
-                          PQclear(res);
-                          PQfinish(conn);
+                         terminalerror("addaddressupdcryptkey",insertQuery,conn,res);
                           return;
                         }
                         PQclear(res);
                       }
                     }else {
-                      ilog ("EDEDEDEDED pub addresses parse error!!!");
+                      ilog ("fatal error -- pub addresses parse error!!!");
                       PQfinish(conn);
                     }
                   } //end loop over pub addresses.
@@ -1906,9 +1651,7 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                     if (addressdata.IsObject())
                     {
                       string HANDLEACTIVITYREMPUBADD = "rem_pubadd";
-                      ilog("EDEDEEEDEDEDEDED actdata is object!!");
                       string addressdatastr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata,ALLOW_EMPTY_VALUES);
-                      ilog("EDEDEDEDEDEDEDED addressdata looks like ${d}",("d",addressdatastr));
                       string chaincode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata["chain_code"],ALLOW_EMPTY_VALUES);                                
                       string tokencode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata["token_code"],ALLOW_EMPTY_VALUES);                                
                       string pubaddress = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata["public_address"],ALLOW_EMPTY_VALUES);                                
@@ -1920,13 +1663,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                           HANDLEACTIVITYREMPUBADD+"','"+
                           blocktimestamp+"');";
                           
-                      ilog("EDEDEDEDEDEDEDED ins handleactivities ${s}",("s",insertQuery));
                       PGresult *res = PQexec(conn, insertQuery.c_str());
-                      ilog("ins handleactivities result status ${r} ",("r",PQresultStatus(res)));
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                        ilog("insert into handleactivities failed ");
-                        PQclear(res);
-                        PQfinish(conn);
+                        terminalerror("remaddress",insertQuery,conn,res);
                         return;
                       }
                       PQclear(res);
@@ -1937,18 +1676,14 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                             tokencode+"','"+
                             pubaddress+"');";
                           
-                      ilog("EDEDEDEDEDEDEDED del pubaddress ${s}",("s",insertQuery));
                       res = PQexec(conn, insertQuery.c_str());
-                      ilog("del pubaddress result status ${r} ",("r",PQresultStatus(res)));
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                        ilog("delto pubaddress failed ");
-                        PQclear(res);
-                        PQfinish(conn);
+                         terminalerror("remaddressdelpubaddr",insertQuery,conn,res);
                         return;
                       }
                       PQclear(res);
                     }else {
-                      ilog ("EDEDEDEDED pub addresses parse error!!!");
+                      ilog ("fatal error--remaddress pub addresses parse error!!!");
                       PQfinish(conn);
                     }
                   } //end loop over pub addresses.
@@ -1971,13 +1706,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       memo+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins tokentransfers ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins tokentransfers result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into token transfers failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                    terminalerror("wraptokens",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1991,13 +1722,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       stakingacct+"','"+
                       sufamount+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins tokenstakings ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins tokenstakings result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into token stakings failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                    terminalerror("stkefio",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -2011,13 +1738,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       stakingacct+"','"+
                       "-"+sufamount+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins tokenstakings ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins tokenstakings result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into token stakings failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                     terminalerror("unstakefio",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -2038,20 +1761,16 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       memo+"','"+
                       blocktimestamp+"');";
                        
-                  ilog("EDEDEDEDEDEDEDED ins tokentransfers ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins tokentransfers result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into token transfers failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                    terminalerror("retire",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
                 } //end if action is retire
 
 
-                } //end action ordinal is 1
+                } //end creator_action ordinal is 0
                 else if ((iactordinal > 1)&&(fktransactionid > -1)) { //action ordinal >1, and a valid tx 
                   //insert into traces
                   string insertQuery = "SELECT instraces("+
@@ -2064,14 +1783,10 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                     requestdata+"','"+
                     blocktimestamp+"');";
                 
-                  ilog("EDEDEDEDEDEDEDED ins traces ${s}",("s",insertQuery));
            
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins traces result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into traces failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                    terminalerror("instraces",insertQuery,conn,res);
                     return;
                   }
 
@@ -2082,6 +1797,10 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
 
 
                if ((actionname == "transfer")&&(receiveraccount == "fio.token")){
+                 string actdatastr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata,ALLOW_EMPTY_VALUES);
+               //  ilog(" actdata looks like ${d}",("d",actdatastr)); 
+               //   ilog(" action ordinal looks like ${d}",("d",actionordinal)); 
+                
                   string payeracct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["from"],DISALLOW_EMPTY_VALUES);                 
                   string payeeacct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["to"],DISALLOW_EMPTY_VALUES);
                   string memo = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["memo"],DISALLOW_EMPTY_VALUES);
@@ -2136,13 +1855,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       memo+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins tokentransfers ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins tokentransfers result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into token transfers failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                    terminalerror("instokentransfer",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -2169,13 +1884,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       memo+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins tokentransfers ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins tokentransfers result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into token transfers failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                     terminalerror("issue",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -2189,13 +1900,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       pubkey+"','"+
                       blocktimestamp+"');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins accounts ${s}",("s",insertQuery));
                   PGresult *res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins transaction result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into accounts failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                    terminalerror("bind2eosio",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -2206,13 +1913,9 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                       accountnm+"','"+
                       +"receiver');";
                       
-                  ilog("EDEDEDEDEDEDEDED ins account activities ${s}",("s",insertQuery));
                   res = PQexec(conn, insertQuery.c_str());
-                  ilog("ins account activities result status ${r} ",("r",PQresultStatus(res)));
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    ilog("insert into account activities failed ");
-                    PQclear(res);
-                    PQfinish(conn);
+                     terminalerror("bind2eosioaccountact",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -2224,12 +1927,7 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
                 "contractaccount '"+contractaccount+"'"+
                 "actionname '"+actionname+"'"+
                 "actionaccount '"+actionaccount+"'";
-              //  "tpid '"+tpid+"'"+
-              //  "requestdata '"+requestdata+"'";
-
-               ilog("EDEDEDEDEDEDEDEDEDEDEDEDED    ${s}",("s",outs));
-               //now check the action name, do relic action triggers for the action name.
-
+             
 
             }
           }
@@ -2238,7 +1936,6 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
              string dataadded =getjsonstring(UNKNOWN_TIMESTAMP,document["data"]["added"],DISALLOW_EMPTY_VALUES);
              string kvotable =getjsonstring(UNKNOWN_TIMESTAMP,document["data"]["kvo"]["table"],DISALLOW_EMPTY_VALUES);
             
-           ilog("EDEDEDEDEDEDEDED kvo table looks like ${d}",("d",kvotable));
 
            if(dataadded == "false" && kvotable == "domains"){
             //take the message and put it into a list of them...process these when we see
@@ -2257,22 +1954,18 @@ ilog("EDEDEDEDEDEDEDED updfiorequestsstatus ${s}",("s",insertQuery));
           else if(msgtype == "FORK" ) {
                 //TODO:  rollback code goes here!!!!
                  string insertQuery = "SELECT rbfork("+bnums+");";
-            ilog("EDEDEDEDEDEDEDED del fork ${s}",("s",insertQuery));
            
             PGresult *res = PQexec(conn, insertQuery.c_str());
-            ilog("fork delete result status ${r} ",("r",PQresultStatus(res)));
             if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                PQclear(res);
-                PQfinish(conn);
+                 terminalerror("fork",insertQuery,conn,res);
                 return;
             }
 
             PQclear(res);
-                ack_block(bnum - 1);
-                ilog("EDEDEDEDEDED ack block called ");
+                ack_block(bnum-1);
           }
           else { //TODO check if the event is in the list of events handled by RELIC then process as per relic{
-            ilog("UnAcknowledged EVENT ${e}",("e",msgtype));
+           // ilog("UnAcknowledged EVENT ${e}",("e",msgtype));
           }
         } 
       }
