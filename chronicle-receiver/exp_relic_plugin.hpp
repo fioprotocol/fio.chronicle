@@ -33,10 +33,9 @@ const static string UNKNOWN_TIMESTAMP =  "1970-01-01T00:00:00Z";
 
 inline string getjsonstring(string defaultv, rapidjson::Value& v, bool allowempty){
   string retval = defaultv;
-  ilog("EDEDEDEDEDED IN GETJSON STRING");
+
   if (!v.IsNull()){
     if (v.IsString()){
-      ilog("EDEDEDED DOING A STRING!!!");
       string tv = v.GetString();
       if(allowempty)
       {
@@ -47,10 +46,7 @@ inline string getjsonstring(string defaultv, rapidjson::Value& v, bool allowempt
           return tv;
         }
       }
-
     }else if (v.IsObject()){
-      ilog("EDEDEDEDEDEDEDED DOING AN OBJECT!!!!");
-       // Create a StringBuffer and a Writer
         rapidjson::StringBuffer buffer;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 
@@ -61,12 +57,10 @@ inline string getjsonstring(string defaultv, rapidjson::Value& v, bool allowempt
         return  buffer.GetString();
 
     }else if (v.IsNumber()){
-      ilog("EDEDEDEDEDEDEDED DOING A number!!!!");
        rapidjson::StringBuffer buffer;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
         v.Accept(writer);
         std::string numberString2 = buffer.GetString();
-        ilog("EDEDEDEDEDED returning number string  ${d}",("d",numberString2));
         return  numberString2;
     }
   }
