@@ -13,8 +13,9 @@ fi
 ARCH=`uname -m`
 JOBS=$(nproc)
 
-CLANG_VER=11.0.1
 BOOST_VER=1.80.0
+CLANG_VER=11.0.1
+CMAKE_VER=3.31.2
 LLVM_VER=7.1.0
 
 SCRIPTS_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
@@ -30,6 +31,42 @@ BUILD_DIR=${HOME_DIR}/build
 echo && echo "Checking package dependencies (pre-built)..."
 sudo ${SCRIPTS_DIR}/install_deps.sh
 echo Done
+
+install_cmake() {
+  CMAKE_DIR=$1
+  if [[ ! -d "${CMAKE_DIR}" ]]; then
+    echo "Installing Cmake ${CMAKE_VER} @ ${CMAKE_DIR}"
+    if [[ ${ARCH} = x86_64 ]]; then
+      CMAKE_FN=cmake-${CMAKE_VER}-linux-x86_64
+      INSTALL_SCRIPT=cmake-${CMAKE_VER}-linux-x86_64.sh
+    elif [[ ${ARCH} = aarch64 ]]; then
+      CMAKE_FN=cmake-${CMAKE_VER}-linux-aarch64
+      INSTALL_SCRIPT=cmake-${CMAKE_VER}-linux-aarch64.sh
+    else
+      echo "Unknown ARCH: $ARCH"
+      exit 1
+    fi
+
+    pushdir /tmp
+    try wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/${INSTALL_SCRIPT}
+    chmod +x ${INSTALL_SCRIPT}
+    sudo sh ${INSTALL_SCRIPT} --prefix=/tmp --include-subdir --skip-license
+    rm -f ${INSTALL_SCRIPT}
+    sudo mv /tmp/${CMAKE_FN} /opt/cmake-${CMAKE_VER}
+    popdir ${DEPS_DIR}
+  fi
+  
+  echo $PATH | grep '/usr/local/bin' >/dev/null
+  if [[ $? ]]; then
+    echo "/usr/local/bin is on PATH; cmake may be found at /usr/local/bin/cmake"
+    if [[ ! -x /usr/local/bin/cmake ]]; then
+      sudo ln -s /opt/cmake-${CMAKE_VER}/bin/cmake /usr/local/bin/cmake
+    fi
+  else
+    echo "usr/local/bin is NOT on PATH; cmake may be found at /opt/cmake-${CMAKE_VER}/bin/cmake"
+    export PATH="/opt/cmake-${CMAKE_VER}/bin:$PATH"
+  fi
+}
 
 install_clang() {
   CLANG_DIR=$1
@@ -99,8 +136,9 @@ install_boost() {
   export BOOST_DIR=${BOOST_DIR}
 }
 
-echo && echo "Checking build dependencies (clang, llvm, boost)..."
+echo && echo "Checking build dependencies (cmake, clang, llvm, boost)..."
 pushdir ${DEPS_DIR}
+install_cmake ${DEPS_DIR}/cmake-${CMAKE_VER}
 install_clang ${DEPS_DIR}/clang-${CLANG_VER}
 install_llvm ${DEPS_DIR}/llvm-${LLVM_VER}
 install_boost ${DEPS_DIR}/boost_${BOOST_VER//\./_}
