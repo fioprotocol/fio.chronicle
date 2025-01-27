@@ -30,7 +30,9 @@ static auto _exp_relic_plugin = app().register_plugin<exp_relic_plugin>();
 namespace {
   const char* RELIC_HOST_OPT = "exp-relic-host";
   const char* RELIC_PORT_OPT = "exp-relic-port";
-  const char* RELIC_PATH_OPT = "exp-relic-path";
+  const char* RELIC_USER_OPT = "exp-relic-username";
+  const char* RELIC_PASSWORD_OPT = "exp-relic-password";
+  const char* RELIC_DB_OPT = "exp-relic-db";
   const char* RELIC_MAXUNACK_OPT = "exp-relic-max-unack";
   const char* RELIC_MAXQUEUE_OPT = "exp-reic-max-queue";
   const char* RELIC_BINHDR = "exp-relic-bin-header";
@@ -57,7 +59,9 @@ public:
 
   string relic_host;
   string relic_port;
-  string relic_path;
+  string relic_user;
+  string relic_password;
+  string relic_db;
   bool use_bin_headers;
   uint32_t maxunack;
 
@@ -96,9 +100,8 @@ public:
     mytimer = std::make_shared<boost::asio::deadline_timer>(app().get_io_service());
 
     //connect to postgres relic db
-    const char *conninfo = "dbname=relicdb user=chronicle_user password=relicchronicle1@0@2 host=localhost port=5432";
-
-    conn = PQconnectdb(conninfo);
+    string conninfo = "dbname="+relic_db+" user="+relic_user+" password="+relic_password+" host="+relic_host+" port="+relic_port;
+    conn = PQconnectdb(conninfo.c_str());
 
     if (PQstatus(conn) != CONNECTION_OK) {
         ilog("failed to connect to relic database exp_relic_plugin will now terminate.");
@@ -2043,9 +2046,11 @@ exp_relic_plugin::~exp_relic_plugin(){
 
 void exp_relic_plugin::set_program_options( options_description& cli, options_description& cfg ) {
   cfg.add_options()
-    (RELIC_HOST_OPT, bpo::value<string>(), "Websocket server host to connect to")
-    (RELIC_PORT_OPT, bpo::value<string>(), "Websocket server port to connect to")
-    (RELIC_PATH_OPT, bpo::value<string>()->default_value("/"), "Websocket server URL path")
+    (RELIC_HOST_OPT, bpo::value<string>()->default_value("localhost"), "postgres db server host to connect to")
+    (RELIC_PORT_OPT, bpo::value<string>()->default_value("5432"), "postgres db port to connect to")
+     (RELIC_USER_OPT, bpo::value<string>()->default_value("chronicle_user"), "postgres account to use for relic db")
+    (RELIC_PASSWORD_OPT, bpo::value<string>()->default_value("1234!"), "postgres account pwd to use for relic db")
+    (RELIC_DB_OPT, bpo::value<string>()->default_value("relicdb"), "postgres relic db name")
     (RELIC_MAXUNACK_OPT, bpo::value<uint32_t>()->default_value(1000),
      "Receiver will pause at so many unacknowledged blocks")
     (RELIC_MAXQUEUE_OPT, bpo::value<uint32_t>()->default_value(10000),
@@ -2079,7 +2084,9 @@ void exp_relic_plugin::plugin_initialize( const variables_map& options ) {
 
     my->relic_host = options.at(RELIC_HOST_OPT).as<string>();
     my->relic_port = options.at(RELIC_PORT_OPT).as<string>();
-    my->relic_path = options.at(RELIC_PATH_OPT).as<string>();
+    my->relic_user = options.at(RELIC_USER_OPT).as<string>();
+    my->relic_password = options.at(RELIC_PASSWORD_OPT).as<string>();
+    my->relic_db = options.at(RELIC_DB_OPT).as<string>();
 
     my->maxunack = options.at(RELIC_MAXUNACK_OPT).as<uint32_t>();
     if( my->maxunack == 0 )
