@@ -3,17 +3,17 @@
 echo "Installing Fio.Chronicle..."
 
 if [[ "$(uname)" == "Linux" ]]; then
-   if [[ -e /etc/os-release ]]; then
-      # obtain NAME and other information
-      . /etc/os-release
-      if [[ ${NAME} != "Ubuntu" ]]; then
-         echo "Currently only supporting Ubuntu based builds. Proceed at your own risk."
-      fi
-   else
-       echo "Currently only supporting Ubuntu based builds. /etc/os-release not found. Your Linux distribution is not supported. Proceed at your own risk."
-   fi
+  if [[ -e /etc/os-release ]]; then
+    # obtain NAME and other information
+    . /etc/os-release
+    if [[ ${NAME} != "Ubuntu" ]]; then
+      echo "Currently only supporting Ubuntu based builds. Proceed at your own risk."
+    fi
+  else
+    echo "Currently only supporting Ubuntu based builds. /etc/os-release not found. Your Linux distribution is not supported. Proceed at your own risk."
+  fi
 else
-   echo "Currently only supporting Ubuntu based builds. Your architecture is not supported. Proceed at your own risk."
+  echo "Currently only supporting Ubuntu based builds. Your architecture is not supported. Proceed at your own risk."
 fi
 
 # Get scripts dir
@@ -26,7 +26,7 @@ HOME_DIR=$(pwd)
 BUILD_DIR=${HOME_DIR}/build
 CONFIG_DIR=${HOME_DIR}/config
 
-. ${SCRIPTS_DIR}/build_utils.sh
+. ${SCRIPTS_DIR}/utils.sh
 
 if [[ -e ${BUILD_DIR}/chronicle-receiver ]]; then
   makedir /opt/fio-chronicle
@@ -34,11 +34,22 @@ if [[ -e ${BUILD_DIR}/chronicle-receiver ]]; then
   makedir /opt/fio-chronicle/data
 
   cp ${BUILD_DIR}/chronicle-receiver /opt/fio-chronicle
-  cp ${CONFIG_DIR}/config.ini.sample /opt/fio-chronicle/config/config.ini
+
+  if [[ -e /opt/fio-chronicle/config/config.ini ]]; then
+    echo
+    echo "WARNING: A FIO.Chronicle configuration already exists!"
+    echo
+    if yes_or_no "Overwrite /opt/fio-chronicle/config/config.ini"; then
+      cp ${CONFIG_DIR}/config.ini.sample /opt/fio-chronicle/config/config.ini
+    fi
+  fi
 
   cp -r ${HOME_DIR}/testing /opt/fio-chronicle
 
+  echo
   echo "FIO.Chronicle has been successfully installed to /opt/fio-chronicle."
 else
+  echo
   echo "ERROR: Unable to install FIO.Chronicle; ${BUILD_DIR}/chronicle-receiver does not exist!"
 fi
+echo
