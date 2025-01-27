@@ -26,7 +26,7 @@ cd $( dirname "${BASH_SOURCE[0]}" )/..
 HOME_DIR="$(pwd)"
 BUILD_DIR=${HOME_DIR}/build
 
-. ${SCRIPTS_DIR}/build_utils.sh
+. ${SCRIPTS_DIR}/utils.sh
 
 echo && echo "Checking package dependencies (pre-built)..."
 sudo ${SCRIPTS_DIR}/install_deps.sh
