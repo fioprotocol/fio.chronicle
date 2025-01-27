@@ -123,7 +123,7 @@ install_boost() {
     echo "Installing Boost ${BOOST_VER} @ ${BOOST_DIR}"
     makedir ${BOOST_DIR}
     pushdir /tmp
-    try wget https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VER}/source/boost_${BOOST_VER//\./_}.tar.gz
+    try wget https://archives.boost.io/release/${BOOST_VER}/source/boost_${BOOST_VER//\./_}.tar.gz
     try tar -xvzf boost_${BOOST_VER//\./_}.tar.gz
     mv boost_${BOOST_VER//\./_}/* ${BOOST_DIR}
     pushdir ${BOOST_DIR}
