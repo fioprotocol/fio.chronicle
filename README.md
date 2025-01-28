@@ -54,31 +54,26 @@ See the [release notes](https://github.com/fioprotocol/fio.chronicle/blob/develo
 ### Cloning the repository
 To clone the FIO.Chronicle repository, execute the command; `git clone --recursive git@github.com:fioprotocol/fio.chronicle.git`
 
-#### Notes
-Perform the following;
-```shell
-cd fio.chronicle
-git checkout develop
-```
-
 ### Build and Install Instructions
 Minimum build requirements: Cmake 3.11, GCC 8.3.0
 
 Dependencies:
 * Boost, version 1.80.0
 * Clang, version 11.0.1
-* LLVM, version 7.1.0.
+* CMake, version 3.31.2
+* LLVM, version 7.1.0
 
 #### Build
 The build script takes one argument, the directory where to find or install the build dependencies including Boost, Clang, and LLVM. It is recommended to use a non-system level directory such as '/opt'. Note that any future builds, if given the same directory, will reuse those build dependencies.
 
 To build fio.chronicle, execute the following commands;
 ```shell
+cd fio.chronicle
 ./scripts/build.sh /opt
 ```
 
 #### Install
-To install fio.chronicle along with the default config.ini file, to /opt/fio-chronicle, execute the following command;
+To install fio.chronicle along with the default config.ini file, to '/opt/fio-chronicle', execute the following command;
 ```shell
 ./scripts/install.sh
 ```
@@ -91,20 +86,25 @@ sudo make install
 Note that the above command will not install the config.ini; to do that, copy the [config.ini.sample](./config/config.ini.sample) to '/opt/fio-chronicle/config/config.ini' and update as desired. See the following configuration overview for more insight into the default configuration as well as how to customize it.
 
 ##### Configuration Overview
-The configuration of FIO.Chronicle is designated via options specified on the command-line as well as captured in a config.ini that is read as part of start up. The configuration options include, but are limited to, the following;
+The configuration of FIO.Chronicle is designated via options specified on the command-line as well as captured in a config.ini that is read as part of start up. The configuration options include, but are not limited to, the following;
 Command-Line Options;
 * --config-dir=\<directory where to find the config.ini\>
 * --data-dir=\<directory where to store data\>
 
 Config.Ini Options;
-* host = \<the nodeos state history host (upstream connection to fio nodeos state history api endpoint)\>
-* port = \<the nodeos state history api port (upstream connection to fio nodeos state history api endpoint port)\>
+* host = \<the nodeos state history host (upstream connection to FIO.Nodeos state history api endpoint)\>
+* port = \<the nodeos state history api port (upstream connection to FIO.Nodeos state history api endpoint port)\>
+* plugin = \<the active plugin (max 1 active); options include 'exp-ws-plugin', 'exp-ws-plugin' \>
 * exp-ws-host = \<the websocket server host (the downstream connnection to a web socket server host)\>
 * exp-ws-port = \<the websocket server port (the downstream connnection to a web socket server port)\>
+* exp-relic-host = \<the FIO.Relic database server host, valid for 'exp-ws-plugin' only (the downstream connnection to a PostgreSQL server host)\>
+* exp-relic-port = \<the FIO.Relic database port, valid for 'exp-ws-plugin' only (the downstream connnection to a PostgreSQL server port)\>
+* exp-relic-username = \<the FIO.Relic database user name, valid for 'exp-ws-plugin' only\>
+* exp-relic-password = \<the FIO.Relic database password, valid for 'exp-ws-plugin' only\>
 
 For more advanced configuration options review the [Advanced Configuration Options](docs/advanced-config.md).
 
-Based on the configuration options above, the config.ini would be as follows;
+Based on the configuration options above, using the websocket exporter plugin, the config.ini is as follows;
 ```shell
 host = 127.0.0.1
 port = 8080
@@ -112,10 +112,35 @@ mode = scan
 plugin = exp_ws_plugin
 exp-ws-host = 127.0.0.1
 exp-ws-port = 8891
-exp-ws-bin-header = false
 ```
 
-These options will allow FIO.Chronicle to connect to a FIO State History node at `127.0.0.1:8080` (host:port) and exports the data to a websocket server at `127.0.0.1:8800` (exp-ws-host:exp-ws-port).
+These options will allow FIO.Chronicle to connect to a FIO State History node at `127.0.0.1:8080` (host:port) and exports processed data, as json, to a websocket server at `127.0.0.1:8891` (url: exp-ws-host:exp-ws-port).
 
-##### Note: the `exp-ws-host` and `exp-ws-port` will be replaced with the RDMS host and port.
+If using the relic exporter plugin, the config.ini would be as follows;
+```shell
+host = 127.0.0.1
+port = 8080
+mode = scan
+plugin = exp_relic_plugin
+exp-relic-host = 127.0.0.1
+exp-relic-port = 5432
+exp-relic-username = chronicle_user
+exp-relic-password = password123!
+```
+
+These options will allow FIO.Chronicle to connect to a FIO State History node at `127.0.0.1:8080` (host:port) and will export processed data to the FIO.Relic PostgreSQL DB server running on host `127.0.0.1` and port `5432`.
+
+##### Start a local FIO State History Node and a local web socket server (test only)
+For the purposes of confirming end-to-end connectivity refer to the following documents to start a local FIO state history node as well as a local web socket server
+* [LocalNet Deployment Guide - Start FIO Nodeos](https://github.com/fioprotocol/fio.relic/blob/develop/docs/localnet-standup.md#start-fio-nodeos)
+* [LocalNet Deployment Guide - Start FIO Nodeos History Node](https://github.com/fioprotocol/fio.relic/blob/develop/docs/localnet-standup.md#start-fio-nodoes-state-history-nodeos)
+* [LocalNet Deployment Guide - Start FIO.Chronicle Web Socket Server](https://github.com/fioprotocol/fio.relic/blob/develop/docs/localnet-standup.md#start-fio-chronicle-test-web-socket-server)
+
+#### Starting the application
+In the following command both a start and an end block number is specified to limit block processing. Note that the start block will default to 1 so only an end block is neccessary. As the `--end-block` parameter is required, specify a very large number to process blocks for the foreseeable future.
+
+Start the fio-chronicle-receiver
+```shell
+/opt/fio-chronicle/chronicle-receiver --config-dir=/opt/fio-chronicle/config --data-dir=/opt/fio-chronicle/data --start-block=1 --end-block=10000
+```
 

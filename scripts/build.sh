@@ -52,7 +52,7 @@ cd $( dirname "${BASH_SOURCE[0]}" )/..
 HOME_DIR="$(pwd)"
 BUILD_DIR=${HOME_DIR}/build
 
-. ${SCRIPTS_DIR}/build_utils.sh
+. ${SCRIPTS_DIR}/utils.sh
 
 echo && echo "Checking build/run-time dependencies..."
 . ${SCRIPTS_DIR}/build_deps.sh ${DEPS_DIR}
