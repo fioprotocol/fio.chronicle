@@ -586,14 +586,14 @@ public:
 
                  //do relic fio transaction relating actions.
                
-                 if ((actionname == "trnsfiopubky")||(actionname == "trnloctoks")){
+                 if ((actionname == "trnsfiopubky")||(actionname == "trnsloctoks")){
                   string payeracct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                 
                   string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payee_public_key"],ALLOW_EMPTY_VALUES);
                   string payeeacct = fioio::key_to_account(pubkey);
                   string TRNSTYPETRANSFER = "transfer";
                   string TRNSTYPETRANSFERLOCKED = "transfer_locked";
                   string trnstype = TRNSTYPETRANSFER;
-                  if(actionname == "trnloctoks") {
+                  if(actionname == "trnsloctoks") {
                     trnstype = TRNSTYPETRANSFERLOCKED;
                   }
                   string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["amount"],ALLOW_EMPTY_VALUES);
