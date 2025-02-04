@@ -16,9 +16,7 @@ if(PostgreSQL_FOUND)
     message(STATUS "Found PostgreSQL: ${PostgreSQL_INCLUDE_DIRS}")
     message(STATUS "Found PostgreSQL: ${PostgreSQL_INCLUDE_DIR}")
     message(STATUS "Found PostgreSQL: ${PostgreSQL_LIBRARY_DIRS}")
-
 endif()
- 
 
 set(CHRONICLE_RECEIVER_NAME "chronicle-receiver" CACHE INTERNAL "")
 set(CHRONICLE_JSON_EXPORT TRUE CACHE INTERNAL "")
@@ -34,8 +32,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(PLATFORM_SPECIFIC_LIBS pthread)
-
-
 
 add_subdirectory(external/abieos EXCLUDE_FROM_ALL)
 add_subdirectory(external/leap/libraries/chainbase EXCLUDE_FROM_ALL)
@@ -55,7 +51,6 @@ if(CHRONICLE_JSON_EXPORT)
     chronicle-receiver/exp_ws_plugin.cpp
     )
 endif()
-
 
 include_directories(
   chronicle-receiver
