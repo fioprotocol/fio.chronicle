@@ -52,7 +52,7 @@ See the [release notes](https://github.com/fioprotocol/fio.chronicle/blob/develo
 * [Docker File](https://github.com/EOSTribe/eos-chronicle-docker) provided by EOS Tribe
 
 ### Cloning the repository
-To clone the FIO.Chronicle repository, execute the command; `git clone --recursive git@github.com:fioprotocol/fio.chronicle.git`
+To clone the FIO.Chronicle repository, execute the command; `git clone --recursive https://github.com/fioprotocol/fio.chronicle.git`
 
 ### Build and Install Instructions
 Minimum build requirements: Cmake 3.11, GCC 8.3.0
@@ -62,6 +62,17 @@ Dependencies:
 * Clang, version 11.0.1
 * CMake, version 3.31.2
 * LLVM, version 7.1.0
+* PostgreSQL, version 16*
+
+**Currently PostgreSQL is a mandatory dependency despite the optional use of plugins that may require it. To install PostgreSQL execute the following commands (taken from https://www.postgresql.org/download/linux/ubuntu/)**
+```shell
+sudo apt install curl ca-certificates
+sudo install -d /usr/share/postgresql-common/pgdg
+sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+sudo apt update
+sudo apt -y install postgresql-16
+```
 
 #### Build
 The build script takes one argument, the directory where to find or install the build dependencies including Boost, Clang, and LLVM. It is recommended to use a non-system level directory such as '/opt'. Note that any future builds, if given the same directory, will reuse those build dependencies.
@@ -73,7 +84,7 @@ cd fio.chronicle
 ```
 
 #### Install
-To install fio.chronicle along with the default config.ini file, to '/opt/fio-chronicle', execute the following command;
+To install fio.chronicle along with the default configuration to '/opt/fio-chronicle', execute the following command;
 ```shell
 ./scripts/install.sh
 ```
@@ -83,7 +94,7 @@ If desired, you may install the executable to '/usr/local/bin' by doing the foll
 cd build
 sudo make install
 ```
-Note that the above command will not install the config.ini; to do that, copy the [config.ini.sample](./config/config.ini.sample) to '/opt/fio-chronicle/config/config.ini' and update as desired. See the following configuration overview for more insight into the default configuration as well as how to customize it.
+Note that the latter command will not install a default configuration; to do that, copy the [config.ini.sample](./config/config.ini.sample) to '/opt/fio-chronicle/config/config.ini'. See the following configuration overview for more insight into the default configuration as well as how to customize it.
 
 ##### Configuration Overview
 The configuration of FIO.Chronicle is designated via options specified on the command-line as well as captured in a config.ini that is read as part of start up. The configuration options include, but are not limited to, the following;
@@ -143,4 +154,3 @@ Start the fio-chronicle-receiver
 ```shell
 /opt/fio-chronicle/chronicle-receiver --config-dir=/opt/fio-chronicle/config --data-dir=/opt/fio-chronicle/data --start-block=1 --end-block=10000
 ```
-
