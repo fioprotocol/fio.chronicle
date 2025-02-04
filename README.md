@@ -51,8 +51,8 @@ See the [release notes](https://github.com/fioprotocol/fio.chronicle/blob/develo
 
 * [Docker File](https://github.com/EOSTribe/eos-chronicle-docker) provided by EOS Tribe
 
-### Cloning the repository
-To clone the FIO.Chronicle repository, execute the command; `git clone --recursive https://github.com/fioprotocol/fio.chronicle.git`
+### Clone the repository
+To clone the FIO.Chronicle repository, execute the command; `git clone --recursive https://github.com/fioprotocol/fio.chronicle.git`. see [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) for more information.
 
 ### Build and Install Instructions
 Minimum build requirements: Cmake 3.11, GCC 8.3.0
