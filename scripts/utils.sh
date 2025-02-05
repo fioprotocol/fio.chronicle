@@ -73,7 +73,7 @@ makedir() {
   made="$(mkdir -p $DIR 2>&1 >/dev/null)"
   if [[ $made =~ $perm_error ]]; then
     sudo mkdir -p $DIR;
-    sudo chown ubuntu:ubuntu $DIR
+    sudo chown $(id -un):$(id -ug) $DIR
   elif [[ $made -ne 0 ]]; then
     echo "Unable to make directory, $DIR, exiting..."
     exit 1
