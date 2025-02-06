@@ -72,10 +72,16 @@ makedir() {
   DIR=$1
   made="$(mkdir -p $DIR 2>&1 >/dev/null)"
   if [[ $made =~ $perm_error ]]; then
-    sudo mkdir -p $DIR;
-    sudo chown $(id -un):$(id -ug) $DIR
+    groups $(id -un) | grep sudo >/dev/null
+    if [[ $? -eq 0 ]]; then
+      sudo mkdir -p $DIR;
+      sudo chown $(id -un):$(id -gn) $DIR
+    else
+      echo "Unable to make directory, $DIR, due to no sudo privilege. Exiting..."
+      exit 1
+    fi
   elif [[ $made -ne 0 ]]; then
-    echo "Unable to make directory, $DIR, exiting..."
+    echo "Unable to make directory, $DIR; reason: $made. Exiting..."
     exit 1
   fi
 }

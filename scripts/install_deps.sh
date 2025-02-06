@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+if [[ "$EUID" -ne 0 ]]; then
+  echo "ERROR: Script must be run as root! Use sudo command as follows; sudo ./<script name>"
+  echo
+  exit 1
+fi
+
 apt-get update
 apt-get update --fix-missing
 DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y install tzdata

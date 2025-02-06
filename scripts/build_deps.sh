@@ -53,6 +53,7 @@ install_cmake() {
     sudo sh ${INSTALL_SCRIPT} --prefix=/tmp --include-subdir --skip-license
     rm -f ${INSTALL_SCRIPT}
     sudo mv /tmp/${CMAKE_FN} /opt/cmake-${CMAKE_VER}
+    sudo chown -R $(id -un):$(id -gn) /opt/cmake-${CMAKE_VER}
     popdir ${DEPS_DIR}
   fi
   
