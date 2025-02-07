@@ -1,39 +1,61 @@
 #!/usr/bin/env bash
 
-echo
-echo "Building Fio.Chronicle..."
+# Debug
+#set -x
 
+# Get Scripts dir and Ensure we're in the repo root and not inside of scripts
+SCRIPTS_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+cd $( dirname "${BASH_SOURCE[0]}" )/..
+
+# Load utility functions
+. ${SCRIPTS_DIR}/utils.sh
+
+echo
 if [[ "$(uname)" == "Linux" ]]; then
-   if [[ -e /etc/os-release ]]; then
-      # obtain NAME and other information
-      . /etc/os-release
-      if [[ ${NAME} != "Ubuntu" ]]; then
-         echo && echo "Currently only supporting Ubuntu based builds. Proceed at your own risk."
-      fi
-   else
-       echo && echo "Currently only supporting Ubuntu based builds. /etc/os-release not found. Your Linux distribution is not supported. Proceed at your own risk."
-   fi
+  if [[ -e /etc/os-release ]]; then
+    # obtain NAME and other information
+    . /etc/os-release
+    if [[ ${NAME} != "Ubuntu" ]]; then
+      echo "Currently only supporting Ubuntu based builds. Proceed at your own risk."
+      pause
+    fi
+  else
+    echo "Currently only supporting Ubuntu based builds. /etc/os-release not found. Your Linux distribution is not supported. Proceed at your own risk."
+    pause
+  fi
 else
-    echo && echo "Currently only supporting Ubuntu based builds. Your architecture is not supported. Proceed at your own risk."
+  echo "Currently only supporting Ubuntu based builds. Your architecture is not supported. Proceed at your own risk."
+  pause
 fi
 
 if [[ $# -eq 0 || -z "$1" ]]; then
-   echo
-   echo "ERROR: No argument provided for Dependency directory" && echo
-   echo "Usage:"
-   echo "./scripts/build.sh DEPS_DIR"
-   echo "  DEPS_DIR: directory to place build dependencies (Clang, LLVM, Boost)"
-   exit -1
+  echo
+  echo "ERROR: No argument provided for Dependency directory" && echo
+  echo "Usage:"
+  echo "./scripts/build.sh DEPS_DIR"
+  echo "  DEPS_DIR: directory to place build dependencies (Clang, LLVM, Boost)"
+  echo
+  exit -1
 fi
 
 if [[ ! -x "$1" ]]; then
-   echo
-   echo "ERROR: $1 is NOT valid; Check permissions and retry!" && echo
-   echo "Usage:"
-   echo "./scripts/build.sh DEPS_DIR"
-   echo "  DEPS_DIR: directory to place build dependencies (Clang, LLVM, Boost)"
-   exit -1
+  echo
+  echo "ERROR: $1 is NOT valid; Check permissions and retry!" && echo
+  echo "Usage:"
+  echo "./scripts/build.sh DEPS_DIR"
+  echo "  DEPS_DIR: directory to place build dependencies (Clang, LLVM, Boost)"
+  echo
+  exit -1
 fi
+
+groups $(id -un) | grep sudo >/dev/null
+if [[ $? -ne 0 ]]; then
+  echo "ERROR: User $(id -un) does NOT have sudo privilege! sudo privilege is required to run this script. Exiting..."
+  echo
+  exit 1
+fi
+
+echo "Building Fio.Chronicle..."
 
 DEPS_DIR=$1
 
@@ -44,15 +66,8 @@ CLANG_VER=11.0.1
 BOOST_VER=1.80.0
 LLVM_VER=7.1.0
 
-SCRIPTS_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
-
-# Ensure we're in the repo root and not inside of scripts
-cd $( dirname "${BASH_SOURCE[0]}" )/..
-
 HOME_DIR="$(pwd)"
 BUILD_DIR=${HOME_DIR}/build
-
-. ${SCRIPTS_DIR}/utils.sh
 
 echo && echo "Checking build/run-time dependencies..."
 . ${SCRIPTS_DIR}/build_deps.sh ${DEPS_DIR}

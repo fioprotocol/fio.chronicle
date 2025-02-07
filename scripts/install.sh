@@ -3,27 +3,36 @@
 # Debug
 #set -x
 
-echo "Installing Fio.Chronicle..."
+# Get Scripts dir and Ensure we're in the repo root and not inside of scripts
+SCRIPTS_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+cd $( dirname "${BASH_SOURCE[0]}" )/..
 
+echo
 if [[ "$(uname)" == "Linux" ]]; then
   if [[ -e /etc/os-release ]]; then
     # obtain NAME and other information
     . /etc/os-release
     if [[ ${NAME} != "Ubuntu" ]]; then
       echo "Currently only supporting Ubuntu based builds. Proceed at your own risk."
+      pause
     fi
   else
     echo "Currently only supporting Ubuntu based builds. /etc/os-release not found. Your Linux distribution is not supported. Proceed at your own risk."
+    pause
   fi
 else
   echo "Currently only supporting Ubuntu based builds. Your architecture is not supported. Proceed at your own risk."
+  pause
 fi
 
-# Get scripts dir
-SCRIPTS_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+groups $(id -un) | grep sudo >/dev/null
+if [[ $? -ne 0 ]]; then
+  echo "ERROR: User $(id -un) does NOT have sudo privilege! sudo privilege is required to run this script. Exiting..."
+  echo
+  exit 1
+fi
 
-# Ensure we're in the repo root and not inside of scripts
-cd $( dirname "${BASH_SOURCE[0]}" )/..
+echo "Installing Fio.Chronicle..."
 
 HOME_DIR=$(pwd)
 BUILD_DIR=${HOME_DIR}/build
