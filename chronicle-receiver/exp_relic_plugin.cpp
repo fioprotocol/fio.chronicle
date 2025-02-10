@@ -1748,7 +1748,7 @@ public:
                   string payeracct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                   string payeeacct = "";
                   string TRNSTYPERETIRE = "retire";
-                  string memo = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["memo"],DISALLOW_EMPTY_VALUES);
+                  string memo = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["memo"],ALLOW_EMPTY_VALUES);
                   string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["quantity"],DISALLOW_EMPTY_VALUES);
                   string insertQuery = "SELECT instokentransfers("+
                        boost::lexical_cast<std::string>(fktransactionid)+","+
