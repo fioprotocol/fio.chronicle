@@ -615,7 +615,19 @@ public:
                   PQclear(res);
                 } //end if action is trnsfiopubky trnsloctok
                 else if ((actionname == "regdomain") || (actionname == "regdomadd") ){
-                   string domainname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_domain"],ALLOW_EMPTY_VALUES);                                
+                   string domainname;
+                   string handle;
+                   if(actionname == "regdomain") {
+                     handle = "";
+                     domainname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_domain"],ALLOW_EMPTY_VALUES);    
+                   } else {
+                    handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
+                 
+                    size_t pos = handle.find('@');
+                    if (pos != string::npos) {
+                      domainname =  handle.substr(pos + 1); 
+                    }
+                   }                           
                    string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                    
                    string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["owner_fio_public_key"],ALLOW_EMPTY_VALUES);
@@ -653,6 +665,68 @@ public:
                     return;
                   }
                   PQclear(res);
+
+
+                if(actionname == "regdomadd") {
+                   string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
+                  string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["owner_fio_public_key"],ALLOW_EMPTY_VALUES);
+                  string owneracct = fioio::key_to_account(pubkey);
+                  string encryptkeyisset = "false";
+                  string bundledtxcount = "100";
+                  string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
+                  string HANDLESTATUSACTIVE = "active";
+                  string chaincode = "FIO";
+                  string tokencode = "FIO";
+                  string insertQuery = "SELECT insupdhandles("+
+                      bnums+",'"+
+                      domainname +"','" +
+                      owneracct +"','" +
+                      handle +"','" +
+                      pubkey +"','" +
+                      encryptkeyisset +"'," +
+                      bundledtxcount +",'" +
+                      expirationtimestamp +"','" +
+                      HANDLESTATUSACTIVE +"');";
+                      
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                   terminalerror("regaddress",insertQuery,conn,res);
+                    return;
+                  }
+                  PQclear(res);
+
+                  string HANDLEACTIVITYTYPEREGISTER = "register";
+                  
+                  insertQuery = "SELECT inshandleactivities("+
+                  boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      handle+"','"+
+                      HANDLEACTIVITYTYPEREGISTER+"','"+
+                      blocktimestamp+"');";
+                      
+                  res = PQexec(conn, insertQuery.c_str());
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                  terminalerror("regaddresshandleact",insertQuery,conn,res);
+                    return;
+                  }
+                  PQclear(res);
+
+                  insertQuery = "SELECT insupdpubaddresses("+
+                      bnums+",'"+
+                      handle+"','"+
+                       chaincode+"','"+
+                        tokencode+"','"+
+                         pubkey+"');";
+                      
+                  res = PQexec(conn, insertQuery.c_str());
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                   terminalerror("regaddressinspubaddr",insertQuery,conn,res);
+                    return;
+                  }
+                  PQclear(res);
+                   }   
+
+
 
                   if(!(actoraccount == owneracct)){ //insert account activity. 
                       insertQuery = "SELECT insaccountactivities("+
