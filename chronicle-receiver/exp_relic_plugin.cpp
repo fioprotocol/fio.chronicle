@@ -1203,16 +1203,16 @@ public:
                  else if ((actionname == "cancelfndreq")){
                     string REQUESTSTATUSCANCEL = "cancelled";
                   string HANDLEACTIVITYTYCANCELREQUEST = "cancel_request";
-                  string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
                   string fiochainrequestid = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_request_id"],ALLOW_EMPTY_VALUES);  
                             
-                  string insertQuery = "SELECT inshandleactivities("+
+                  string insertQuery = "SELECT inshandleactivitiesfiorequest("+
                   boost::lexical_cast<std::string>(fktransactionid)+","+
-                      bnums+",'"+
-                      handle+"','"+
+                      bnums+","+
+                      fiochainrequestid+",'"+
                       HANDLEACTIVITYTYCANCELREQUEST+"','"+
                       blocktimestamp+"');";
-                      
+
+                   //   ilog(" ins handle activities looks like ${d}",("d",insertQuery));  
                   PGresult *res = PQexec(conn, insertQuery.c_str());
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
                    terminalerror("cancelfndreqhandleact",insertQuery,conn,res);
