@@ -1052,8 +1052,7 @@ public:
 
                 } //end if action is burnaddress
                  else if ((actionname == "newfundsreq")){
-                  string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payee_fio_address"],ALLOW_EMPTY_VALUES);                                
-                  string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
+                   string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                   string payerhandle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payer_fio_address"],ALLOW_EMPTY_VALUES);  
                   string payeehandle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payee_fio_address"],ALLOW_EMPTY_VALUES);  
                    string content = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["content"],ALLOW_EMPTY_VALUES);  
@@ -1064,7 +1063,7 @@ public:
                   string insertQuery = "SELECT inshandleactivities("+
                   boost::lexical_cast<std::string>(fktransactionid)+","+
                       bnums+",'"+
-                      handle+"','"+
+                      payeehandle+"','"+
                       HANDLEACTIVITYTYNEWREQUEST+"','"+
                       blocktimestamp+"');";
                       
@@ -1074,20 +1073,6 @@ public:
                     return;
                   }
                   PQclear(res);
-                
-                  
-                      insertQuery = "SELECT insaccountactivities("+
-                      boost::lexical_cast<std::string>(fktransactionid)+","+
-                      bnums+",'"+
-                      actoraccount+"','"+
-                      +"receiver');";
-                      
-                      res = PQexec(conn, insertQuery.c_str());
-                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                       terminalerror("newfundsreqaccountactivity",insertQuery,conn,res);
-                        return;
-                      }
-                      PQclear(res);
 
                        insertQuery = "SELECT insaccountactivitieshandle("+
                       boost::lexical_cast<std::string>(fktransactionid)+","+
@@ -1122,7 +1107,6 @@ public:
                  
                 } //end if action is newfundsreq
                  else if ((actionname == "recordobt")){
-                  string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payee_fio_address"],ALLOW_EMPTY_VALUES);                                
                   string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                   string payerhandle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payer_fio_address"],ALLOW_EMPTY_VALUES);  
                   string payeehandle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payee_fio_address"],ALLOW_EMPTY_VALUES);  
@@ -1133,7 +1117,7 @@ public:
                   string insertQuery = "SELECT inshandleactivities("+
                   boost::lexical_cast<std::string>(fktransactionid)+","+
                       bnums+",'"+
-                      handle+"','"+
+                      payerhandle+"','"+
                       HANDLEACTIVITYTYRECORDOBT+"','"+
                       blocktimestamp+"');";
                       
@@ -1143,25 +1127,11 @@ public:
                     return;
                   }
                   PQclear(res);
-                
-                  
-                      insertQuery = "SELECT insaccountactivities("+
-                      boost::lexical_cast<std::string>(fktransactionid)+","+
-                      bnums+",'"+
-                      actoraccount+"','"+
-                      +"receiver');";
-                      
-                      res = PQexec(conn, insertQuery.c_str());
-                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                       terminalerror("recordobtaccountactivity",insertQuery,conn,res);
-                        return;
-                      }
-                      PQclear(res);
 
                        insertQuery = "SELECT insaccountactivitieshandle("+
                       boost::lexical_cast<std::string>(fktransactionid)+","+
                       bnums+",'"+
-                      payerhandle+"','"+
+                      payeehandle+"','"+
                       +"receiver');";
                       
                       res = PQexec(conn, insertQuery.c_str());
