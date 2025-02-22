@@ -1,0 +1,8 @@
+host = 127.0.0.1
+port = 8080
+mode = scan
+plugin = exp_relic_plugin
+exp-relic-host = 127.0.0.1
+exp-relic-port = 5432
+exp-relic-username = chronicle_user
+exp-relic-password = password123!
