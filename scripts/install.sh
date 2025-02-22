@@ -54,10 +54,10 @@ if [[ -e ${BUILD_DIR}/chronicle-receiver ]]; then
     echo
     if yes_or_no "Overwrite /opt/fio-chronicle/config/config.ini"; then
       mv /opt/fio-chronicle/config/config.ini /opt/fio-chronicle/config/config.ini.$(date +%Y%m%d_%H%M%S)
-      cp ${CONFIG_DIR}/config.ini.sample /opt/fio-chronicle/config/config.ini
+      cp ${CONFIG_DIR}/config.ini.relic /opt/fio-chronicle/config/config.ini
     fi
   else
-    cp ${CONFIG_DIR}/config.ini.sample /opt/fio-chronicle/config/config.ini
+    cp ${CONFIG_DIR}/config.ini.relic /opt/fio-chronicle/config/config.ini
   fi
 
   cp -r ${HOME_DIR}/testing /opt/fio-chronicle
