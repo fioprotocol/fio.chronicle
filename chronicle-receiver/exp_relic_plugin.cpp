@@ -80,8 +80,8 @@ public:
   uint32_t queue_lwm;
   boost::asio::const_buffer async_out_buffer;
   std::shared_ptr<boost::asio::deadline_timer> mytimer;
-  std::vector<rapidjson::Value> domainjsons;
-  std::vector<rapidjson::Value> handlejsons;
+  std::vector<string> domainjsons;
+  std::vector<string> handlejsons;
   std::vector<std::string> burnaddresses;
   bool burnexpiredthisblock = false;
   uint64_t burnexpiredtrid = 0;
@@ -325,22 +325,20 @@ public:
 
                if (burnexpiredthisblock){
                    //first process the list of domains that may have been burnt
-                   for (const rapidjson::Value& object : domainjsons) {
-                      if (!object.IsObject()) {
-                         std::cerr << "Error: Element in array is not an object." << std::endl;
-                         PQfinish(conn); //TODO -- cleaner exit.
-                      }
-                      string domname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["name"],ALLOW_EMPTY_VALUES);
-                      string ispublic = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["is_public"],ALLOW_EMPTY_VALUES);                                
-                      string expiration = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)object["data"]["kvo"]["value"]["expiration"],ALLOW_EMPTY_VALUES);
-                      string domainbnum = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["block_num"],ALLOW_EMPTY_VALUES);
+     if(!(domainjsons.empty()))     {     
+                   for (const string& datastr : domainjsons) {
+                     rapidjson::Document object;
+                      object.Parse((const char*)datastr.c_str(),datastr.length());
+                    
+                      string domname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["kvo"]["value"]["name"],ALLOW_EMPTY_VALUES);
+                      string ispublic = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["kvo"]["value"]["is_public"],ALLOW_EMPTY_VALUES);                                
+                      string expiration = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)object["kvo"]["value"]["expiration"],ALLOW_EMPTY_VALUES);
+                      string domainbnum = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["block_num"],ALLOW_EMPTY_VALUES);
                  
                     if(bnums == domainbnum){ 
                           int64_t updburntres = 0;
                           string insertQuery = "SELECT upddomainburnt('"+
-                              domname +"','" +
-                              ispublic +"','" +
-                              expiration +"');";
+                              domname +"');";
                               
                           PGresult *res = PQexec(conn, insertQuery.c_str());
                           if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -354,6 +352,7 @@ public:
                           PQclear(res);
 
                           if (updburntres == 1){
+                           
                               string DOMAINACTIVITYAUTOBURN = "auto_burn";
                               insertQuery = "SELECT insdomainactivities("+
                               boost::lexical_cast<std::string>(burnexpiredtrid)+","+
@@ -372,17 +371,19 @@ public:
                       }
                      
                    }
+     }
                   
 
-                  for (const rapidjson::Value& object : handlejsons) {
-                      if (!object.IsObject()) {
-                         std::cerr << "Error: Element in array is not an object." << std::endl;
-                         PQfinish(conn); //TODO -- cleaner exit.
-                      }
-                      string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["name"],ALLOW_EMPTY_VALUES);
-                      string expiration = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)object["data"]["kvo"]["value"]["expiration"],ALLOW_EMPTY_VALUES);
-                      string bundlecount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["kvo"]["value"]["bundleeligiblecountdown"],ALLOW_EMPTY_VALUES);
-                      string handlebnum = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["data"]["block_num"],ALLOW_EMPTY_VALUES);
+if(! (handlejsons.empty())){
+                  for (const string& datastr : handlejsons) {
+
+                      rapidjson::Document object;
+                      object.Parse((const char*)datastr.c_str(),datastr.length());
+                    
+                      string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["kvo"]["value"]["name"],ALLOW_EMPTY_VALUES);
+                      string expiration = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)object["kvo"]["value"]["expiration"],ALLOW_EMPTY_VALUES);
+                      string bundlecount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["kvo"]["value"]["bundleeligiblecountdown"],ALLOW_EMPTY_VALUES);
+                      string handlebnum = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["block_num"],ALLOW_EMPTY_VALUES);
 
                     //if this handle is burnaddress then skip it
                     if (std::find(burnaddresses.begin(), burnaddresses.end(), handle) != burnaddresses.end()){
@@ -392,11 +393,11 @@ public:
                     if(bnums == handlebnum){ 
 
                            //process array of addresses.
-                            const rapidjson::Value& dvaddresses = document["data"]["kvo"]["value"]["addresses"];
+                            const rapidjson::Value& dvaddresses = document["kvo"]["value"]["addresses"];
                             bool makehandleburnt = true;
                             for (const auto& object : dvaddresses.GetArray()) {
                                if (!object.IsObject()) {
-                                  std::cerr << "Error: Element in array is not an object." << std::endl;
+                                  std::cerr << "Error pub addresses: Element in array is not an object." << std::endl;
                                   continue;
                                 }
                                 string tokencode = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)object["token_code"],DISALLOW_EMPTY_VALUES);
@@ -430,13 +431,10 @@ public:
                           } //end for addresses
 
                           if (makehandleburnt) {
-
                              int64_t updhandleres =0;
                              string insertQuery = "SELECT updhandleburnt("+
                                     bnums+",'"+
-                                    handle +"','" +
-                                    bundlecount +"','" +
-                                    expiration +"');";
+                                    handle  +"');";
                                     
                                 PGresult *res = PQexec(conn, insertQuery.c_str());
                                 if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -468,6 +466,7 @@ public:
                           } 
                       }
                    }
+}
                   
           }
 
@@ -514,7 +513,7 @@ public:
              int64_t fktransactionid = -1; //index of transactionid
               for (const auto& object : dvtrace.GetArray()) {
                 if (!object.IsObject()) {
-                    std::cerr << "Error: Element in array is not an object." << std::endl;
+                    std::cerr << "Error action traces: Element in array is not an object." << std::endl;
                     continue;
                 }
 
@@ -993,6 +992,7 @@ public:
                 } //end if action is updcryptkey
                  else if ((actionname == "burnexpired")){
                   burnexpiredthisblock = true;
+                  burnexpiredtimestamp = blocktimestamp;
                   burnexpiredtrid = fktransactionid;
                  }
                  else if ((actionname == "burnaddress")){
@@ -1376,7 +1376,7 @@ public:
                    const rapidjson::Value& dvtrace = actdata["nfts"];
                   for (const auto& object : dvtrace.GetArray()) {
                       if (!object.IsObject()) {
-                         std::cerr << "Error: Element in array is not an object." << std::endl;
+                         std::cerr << "Error nfts: Element in array is not an object." << std::endl;
                          PQfinish(conn); //TODO -- cleaner exit.
                       }
                       const rapidjson::Value& nftdata = object;
@@ -1436,7 +1436,7 @@ public:
                    const rapidjson::Value& dvtrace = actdata["nfts"];
                   for (const auto& object : dvtrace.GetArray()) {
                       if (!object.IsObject()) {
-                         std::cerr << "Error: Element in array is not an object." << std::endl;
+                         std::cerr << "Error remnft: Element in array is not an object." << std::endl;
                          PQfinish(conn); //TODO -- cleaner exit.
                       }
                       const rapidjson::Value& nftdata = object;
@@ -1620,7 +1620,7 @@ public:
                   const rapidjson::Value& dvtrace = actdata["public_addresses"];
                   for (const auto& object : dvtrace.GetArray()) {
                       if (!object.IsObject()) {
-                         std::cerr << "Error: Element in array is not an object." << std::endl;
+                         std::cerr << "Error addaddress: Element in array is not an object." << std::endl;
                          PQfinish(conn); //TODO -- cleaner exit.
                       }
                       const rapidjson::Value& addressdata = object;
@@ -1686,7 +1686,7 @@ public:
                   const rapidjson::Value& dvtrace = actdata["public_addresses"];
                   for (const auto& object : dvtrace.GetArray()) {
                       if (!object.IsObject()) {
-                         std::cerr << "Error: Element in array is not an object." << std::endl;
+                         std::cerr << "Error remaddress: Element in array is not an object." << std::endl;
                          PQfinish(conn); //TODO -- cleaner exit.
                       }
                       const rapidjson::Value& addressdata = object;
@@ -1978,18 +1978,17 @@ public:
             //check that the added false and the table is domains.
              string dataadded =getjsonstring(UNKNOWN_TIMESTAMP,document["data"]["added"],DISALLOW_EMPTY_VALUES);
              string kvotable =getjsonstring(UNKNOWN_TIMESTAMP,document["data"]["kvo"]["table"],DISALLOW_EMPTY_VALUES);
+            const string datavs = getjsonstring(UNKNOWN_STRING,document["data"],DISALLOW_EMPTY_VALUES);
             
 
-           if(dataadded == "false" && kvotable == "domains"){
+           if(dataadded == "false" && kvotable == "domains"){              
             //take the message and put it into a list of them...process these when we see
             //the burnexpired action....clear the list on end block
-            rapidjson::Value val;
-            domainjsons.push_back(rapidjson::Value(val, document.GetAllocator()));
+             domainjsons.push_back(datavs);
            }else  if(dataadded == "false" && kvotable == "fiohandles"){
             //take the message and put it into a list of them...process these when we see
             //the burnexpired action....clear the list on end block
-            rapidjson::Value val;
-            handlejsons.push_back(rapidjson::Value(val, document.GetAllocator()));
+            handlejsons.push_back(datavs);
            }
 
 
