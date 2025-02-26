@@ -24,7 +24,7 @@ cr_pid=$(pgrep chronicle)
 if [[ -n $cr_pid ]]; then
   echo && echo "WARNING: FIO.Chronicle appears to be running! "
   echo
-  if yes_or_no "Stop FIO.Chronicle?"; then
+  if yes_or_no "Stop FIO.Chronicle"; then
     kill -INT ${cr_pid}
   else
     echo && echo "FIO.Chronicle must be stopped before proceeding. Exiting..."
@@ -42,7 +42,7 @@ if [[ -n $cr_pid ]]; then
 fi
 
 echo
-if yes_or_no "Reset FIO.Chronicle state?"; then
+if yes_or_no "Reset FIO.Chronicle state"; then
   rm -f ${INSTALL_DIR}/data/receiver-state/lock.bin
   rm -f ${INSTALL_DIR}/data/receiver-state/shared_memory.bin
 fi  
