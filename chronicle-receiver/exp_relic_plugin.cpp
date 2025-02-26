@@ -2016,6 +2016,7 @@ public:
        async_send_events();
     }
     }catch(...){ 
+      PQfinish(conn);
       abort_receiver();
     }
    
