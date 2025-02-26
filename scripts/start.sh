@@ -51,4 +51,5 @@ fi
 echo && echo "Starting FIO.Chronicle..."
 pause
 makedir ${INSTALL_DIR}/log
+rm -f ${INSTALL_DIR}/log/chronicle.log
 ${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --end-block=400000000 2>&1 | tee -a ${INSTALL_DIR}/log/chronicle.log &
