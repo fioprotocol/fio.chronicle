@@ -252,12 +252,14 @@ public:
       ilog("Error -- exp_relic_plugin execution will be terminated. "); 
       PQclear(results);
       PQfinish(dbconn);
+      throw(new std::runtime_error("Unexpected error in exporter, receiver will shut down."));
   }
 
 //send events to the relic database here.
 //relic
   void async_send_events() {
     
+    try {
     if( async_queue.empty() ) {
       
       if( pause_time_msec == 0 ) {
@@ -325,7 +327,7 @@ public:
 
                if (burnexpiredthisblock){
                    //first process the list of domains that may have been burnt
-     if(!(domainjsons.empty()))     {     
+                 if(!(domainjsons.empty()))     {     
                    for (const string& datastr : domainjsons) {
                      rapidjson::Document object;
                       object.Parse((const char*)datastr.c_str(),datastr.length());
@@ -371,10 +373,10 @@ public:
                       }
                      
                    }
-     }
+                  }
                   
 
-if(! (handlejsons.empty())){
+                if(! (handlejsons.empty())){
                   for (const string& datastr : handlejsons) {
 
                       rapidjson::Document object;
@@ -466,7 +468,7 @@ if(! (handlejsons.empty())){
                           } 
                       }
                    }
-}
+                  }
                   
           }
 
@@ -2013,7 +2015,10 @@ if(! (handlejsons.empty())){
       }
        async_send_events();
     }
-
+    }catch(...){ 
+      PQfinish(conn);
+      abort_receiver();
+    }
    
 
   }
