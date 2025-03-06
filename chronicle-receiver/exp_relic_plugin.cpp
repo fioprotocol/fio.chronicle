@@ -287,15 +287,18 @@ public:
       async_queue.pop();
       async_out_buffer = boost::asio::const_buffer(async_msg->data(), async_msg->size());
 
+
       rapidjson::Document document;
       document.Parse((const char*)async_msg->data(),async_msg->size());
-    //  rapidjson::StringBuffer strbuf;
-    //   strbuf.Clear();
+   /* 
+   rapidjson::StringBuffer strbuf;
+      strbuf.Clear();
 
-    //   rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
-    //   document.Accept(writer);
-    //   std::string dString = strbuf.GetString();
-    //   ilog(" document looks like ${s}",("s",dString));
+     rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+     document.Accept(writer);
+     std::string dString = strbuf.GetString();
+     ilog(" document looks like ${s}",("s",dString));
+     */
 
     // Check if parsing was successful
     if (document.HasParseError()) {
@@ -402,9 +405,9 @@ public:
                                   std::cerr << "Error pub addresses: Element in array is not an object." << std::endl;
                                   continue;
                                 }
-                                string tokencode = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)object["token_code"],DISALLOW_EMPTY_VALUES);
-                                string chaincode = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)object["chain_code"],DISALLOW_EMPTY_VALUES);
-                                string publicaddress = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)object["public_address"],DISALLOW_EMPTY_VALUES);
+                                string tokencode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["token_code"],DISALLOW_EMPTY_VALUES);
+                                string chaincode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["chain_code"],DISALLOW_EMPTY_VALUES);
+                                string publicaddress = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["public_address"],DISALLOW_EMPTY_VALUES);
                              
 
                                 int64_t hasparesult = 0;
@@ -503,6 +506,9 @@ public:
           }
            else if (msgtype == "TX_TRACE"){
 
+           
+   
+
             string blocktimestamp =getjsonstring(UNKNOWN_TIMESTAMP,document["data"]["block_timestamp"],DISALLOW_EMPTY_VALUES);
           
             //gotta parse the transaction info.
@@ -510,8 +516,8 @@ public:
             string status =getjsonstring(UNKNOWN_STRING,document["data"]["trace"]["status"],DISALLOW_EMPTY_VALUES);
            
             const rapidjson::Value& dvtrace = document["data"]["trace"]["action_traces"];
-            // string tracesstr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)document["data"]["trace"],ALLOW_EMPTY_VALUES);
-             //    ilog(" actdata looks like ${d}",("d",tracesstr)); 
+            //string tracesstr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)document["data"]["trace"],ALLOW_EMPTY_VALUES);
+            //   ilog(" actdata looks like ${d}",("d",tracesstr)); 
              int64_t fktransactionid = -1; //index of transactionid
               for (const auto& object : dvtrace.GetArray()) {
                 if (!object.IsObject()) {
@@ -519,17 +525,17 @@ public:
                     continue;
                 }
 
-                string actionordinal = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)object["action_ordinal"],DISALLOW_EMPTY_VALUES);
-                string creatoractionordinal = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)object["creator_action_ordinal"],DISALLOW_EMPTY_VALUES);
+                string actionordinal = getjsonstring(UNKNOWN_NUMBER_NULL,(rapidjson::Value&)object["action_ordinal"],DISALLOW_EMPTY_VALUES);
+                string creatoractionordinal = getjsonstring(UNKNOWN_NUMBER_NULL,(rapidjson::Value&)object["creator_action_ordinal"],DISALLOW_EMPTY_VALUES);
                
                 string response = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["receipt"]["response"],ALLOW_EMPTY_VALUES);
              // ilog(" act ordinal ${o}",("o",actionordinal));
                 int64_t iactordinal =  -1;
-                if(!(actionordinal == UNKNOWN_NUMBER)){
+                if(!(actionordinal == UNKNOWN_NUMBER_NULL)){
                   iactordinal = atoi(actionordinal.c_str());
                 }
                  int64_t icactordinal =  -1;
-                if(!(creatoractionordinal == UNKNOWN_NUMBER)){
+                if(!(creatoractionordinal == UNKNOWN_NUMBER_NULL)){
                   icactordinal = atoi(creatoractionordinal.c_str());
                 }
                 string receiveraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["receiver"],DISALLOW_EMPTY_VALUES);
@@ -538,7 +544,7 @@ public:
                 const rapidjson::Value& actdata = object["act"]["data"];
                 rapidjson::Document respdoc;
                 respdoc.Parse((const char*)response.c_str());
-                string feeamount = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)respdoc["fee_collected"],ALLOW_EMPTY_VALUES);
+                string feeamount = getjsonstring(UNKNOWN_NUMBER_0,(rapidjson::Value&)respdoc["fee_collected"],ALLOW_EMPTY_VALUES);
               
                 const rapidjson::Value& arrayauth = object["act"]["authorization"];
                 rapidjson::Value& firstauth = (rapidjson::Value&)object;
@@ -551,10 +557,11 @@ public:
                  string actionaccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)firstauth["actor"],DISALLOW_EMPTY_VALUES);
                  string tpid = "UNKNOWN";
                  if(actdata.IsObject()){
-                  tpid = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);
+                  tpid = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["tpid"],ALLOW_EMPTY_VALUES);
                  }
                  string requestdata = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata,ALLOW_EMPTY_VALUES);
                  string maxfee = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)firstauth["actor"],DISALLOW_EMPTY_VALUES);
+  
   
                 if((icactordinal == 0)&&!(actionname == "onblock")&&!(actionname == "nonce")){
                 
@@ -636,6 +643,52 @@ public:
                   string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
                   string ispublic = "false";
                   string domainstatus = "active";
+
+
+//do pub key processing and accounts
+                  if (pubkey == UNKNOWN_STRING){
+                    //get the actor account info and use it
+
+                      string accQuery = "SELECT * FROM getaccountpubkeyandid('"+
+                      actoraccount  +"');";
+                      
+                      PGresult *res = PQexec(conn, accQuery.c_str());
+                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                      terminalerror("regdomaingetaccountinf",accQuery,conn,res);
+                        return;
+                      }
+                     
+                    
+                      int rec_count = PQntuples(res);
+
+                      if (rec_count > 1){
+                         terminalerror("regdomaingetaccountinf",accQuery,conn,res);
+                        return;
+                      }
+ 
+                      pubkey = PQgetvalue(res, 0, 1);
+                      owneracct = actoraccount;
+ 
+                       PQclear(res);
+                  }else { //insert the acount info for the pub key used, do not mod if exists.
+                    string insertQuery = "SELECT insupdaccounts("+
+                      bnums+",'"+
+                      owneracct+"','"+
+                      pubkey+"','"+
+                      blocktimestamp +"','false');";
+                      
+                    PGresult *res = PQexec(conn, insertQuery.c_str());
+                    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                      terminalerror("regdomaininsupdaccounts",insertQuery,conn,res);
+                      return;
+                    }
+                    PQclear(res);
+                  }
+//end do pubkey and account
+
+
+
+
                   string insertQuery = "SELECT insdomains("+
                       bnums+",'"+
                       domainname+"','"+
@@ -691,7 +744,7 @@ public:
                       
                   PGresult *res = PQexec(conn, insertQuery.c_str());
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                   terminalerror("regaddress",insertQuery,conn,res);
+                   terminalerror("regdomadd",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -707,7 +760,7 @@ public:
                       
                   res = PQexec(conn, insertQuery.c_str());
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                  terminalerror("regaddresshandleact",insertQuery,conn,res);
+                  terminalerror("regdomaddhandleact",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -721,7 +774,7 @@ public:
                       
                   res = PQexec(conn, insertQuery.c_str());
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                   terminalerror("regaddressinspubaddr",insertQuery,conn,res);
+                   terminalerror("regdomaddinspubaddr",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -738,7 +791,7 @@ public:
                       
                       res = PQexec(conn, insertQuery.c_str());
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                        terminalerror("regdomainaccountactivity",insertQuery,conn,res);
+                        terminalerror("regdomaddaccountactivity",insertQuery,conn,res);
                         return;
                       }
                       PQclear(res);
@@ -1001,11 +1054,10 @@ public:
                   string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
                   string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["encrypt_public_key"],ALLOW_EMPTY_VALUES);
                   burnaddresses.push_back(handle);
-                  string HANDLESTATUSBURNT = "burnt";
-                  string insertQuery = "SELECT updhandlesstatus("+
-                      bnums+",'"+
-                      handle +"','" +
-                      HANDLESTATUSBURNT +"');";
+              
+                  string insertQuery = "SELECT updhandleburnt("+
+                                    bnums+",'"+
+                                    handle  +"');";
                       
                   PGresult *res = PQexec(conn, insertQuery.c_str());
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -1060,7 +1112,7 @@ public:
                    string content = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["content"],ALLOW_EMPTY_VALUES);  
                   string REQUESTSTATUSPENDING = "pending";
                   string HANDLEACTIVITYTYNEWREQUEST = "new_request";
-                  string fiochainrequestid = getjsonstring(UNKNOWN_NUMBER,(rapidjson::Value&)respdoc["fio_request_id"],ALLOW_EMPTY_VALUES);
+                  string fiochainrequestid = getjsonstring(UNKNOWN_NUMBER_NULL,(rapidjson::Value&)respdoc["fio_request_id"],ALLOW_EMPTY_VALUES);
                   
                   string insertQuery = "SELECT inshandleactivities("+
                   boost::lexical_cast<std::string>(fktransactionid)+","+
@@ -1220,6 +1272,47 @@ public:
                   string HANDLESTATUSACTIVE = "active";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
+
+
+                  if (pubkey == UNKNOWN_STRING){
+                    //get the actor account info and use it
+
+                      string accQuery = "SELECT * FROM getaccountpubkeyandid('"+
+                      actoraccount  +"');";
+                      
+                      PGresult *res = PQexec(conn, accQuery.c_str());
+                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                      terminalerror("regaddressgetpubkey",accQuery,conn,res);
+                        return;
+                      }
+                     
+                    
+                      int rec_count = PQntuples(res);
+
+                      if (rec_count > 1){
+                         terminalerror("regaddressgetaccountinf",accQuery,conn,res);
+                        return;
+                      }
+ 
+                      pubkey = PQgetvalue(res, 0, 1);
+                      owneracct = actoraccount;
+ 
+                       PQclear(res);
+                  }else { //insert the acount info for the pub key used, do not mod if exists.
+                    string insertQuery = "SELECT insupdaccounts("+
+                      bnums+",'"+
+                      owneracct+"','"+
+                      pubkey+"','"+
+                      blocktimestamp +"','false');";
+                      
+                    PGresult *res = PQexec(conn, insertQuery.c_str());
+                    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                      terminalerror("regaddressinsupdaccounts",insertQuery,conn,res);
+                      return;
+                    }
+                    PQclear(res);
+                  }
+                  
                   string insertQuery = "SELECT insupdhandles("+
                       bnums+",'"+
                       domain +"','" +
@@ -1508,6 +1601,54 @@ public:
                   string HANDLEACTIVITYTRANSFER = "transfer";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
+                  string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
+                
+
+//do pub key processing and accounts
+                  if (pubkey == UNKNOWN_STRING){
+                    //get the actor account info and use it
+
+                      string accQuery = "SELECT * FROM getaccountpubkeyandid('"+
+                      actoraccount  +"');";
+                      
+                      PGresult *res = PQexec(conn, accQuery.c_str());
+                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                      terminalerror("xferaddressgetaccountinf",accQuery,conn,res);
+                        return;
+                      }
+                     
+                    
+                      int rec_count = PQntuples(res);
+
+                      if (rec_count > 1){
+                         terminalerror("xferaddressgetaccountinf",accQuery,conn,res);
+                        return;
+                      }
+ 
+                      pubkey = PQgetvalue(res, 0, 1);
+                      owneracct = actoraccount;
+ 
+                       PQclear(res);
+                  }else { //insert the acount info for the pub key used, do not mod if exists.
+                    string insertQuery = "SELECT insupdaccounts("+
+                      bnums+",'"+
+                      owneracct+"','"+
+                      pubkey+"','"+
+                      blocktimestamp +"','false');";
+                      
+                    PGresult *res = PQexec(conn, insertQuery.c_str());
+                    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                      terminalerror("xferaddressinsupdaccounts",insertQuery,conn,res);
+                      return;
+                    }
+                    PQclear(res);
+                  }
+//end do pubkey and account
+
+
+
+
+
                   string insertQuery = "SELECT updhandlesxferowner("+
                        bnums+",'"+
                       handle +"','" +
@@ -1943,7 +2084,7 @@ public:
                       bnums+",'"+
                       accountnm+"','"+
                       pubkey+"','"+
-                      blocktimestamp+"');";
+                      blocktimestamp +"','true');";
                       
                   PGresult *res = PQexec(conn, insertQuery.c_str());
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {

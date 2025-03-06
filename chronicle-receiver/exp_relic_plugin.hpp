@@ -25,9 +25,10 @@ private:
 };
 
 
-const static string UNKNOWN_TIMESTAMP =  "1970-01-01T00:00:00Z";
-  const static string UNKNOWN_STRING = "UNKNOWN";
-  const static string UNKNOWN_NUMBER = "NULL";
+const static string UNKNOWN_TIMESTAMP =  "";
+  const static string UNKNOWN_STRING = "";
+  const static string UNKNOWN_NUMBER_NULL = "NULL";
+  const static string UNKNOWN_NUMBER_0 = "0";
   const static bool ALLOW_EMPTY_VALUES = true;
   const static bool DISALLOW_EMPTY_VALUES = false;
 
