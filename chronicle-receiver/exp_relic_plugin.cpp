@@ -1975,7 +1975,7 @@ public:
                 } //end if action is unstakefio
                  else if ((actionname == "retire")){
                   string payeracct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
-                  string payeeacct = "";
+                  string payeeacct = "fio.token";
                   string TRNSTYPERETIRE = "retire";
                   string memo = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["memo"],ALLOW_EMPTY_VALUES);
                   string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["quantity"],DISALLOW_EMPTY_VALUES);
