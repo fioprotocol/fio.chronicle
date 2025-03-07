@@ -555,7 +555,7 @@ public:
 
                  
                  string actionaccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)firstauth["actor"],DISALLOW_EMPTY_VALUES);
-                 string tpid = "UNKNOWN";
+                 string tpid = "";
                  if(actdata.IsObject()){
                   tpid = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["tpid"],ALLOW_EMPTY_VALUES);
                  }
@@ -612,7 +612,7 @@ public:
                       payeeacct+"',"+
                       sufamount+",'"+
                       trnstype +"','"+
-                      +"UNKNOWN','"+
+                      +"','"+ 
                       blocktimestamp+"');";
                       
                   PGresult *res = PQexec(conn, insertQuery.c_str());
@@ -832,7 +832,49 @@ public:
                   string domainname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_domain"],ALLOW_EMPTY_VALUES);                                
                   string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["new_owner_fio_public_key"],ALLOW_EMPTY_VALUES);
                   string owneracct = fioio::key_to_account(pubkey);
+                  string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                  
+                 //do pub key processing and accounts
+                  if (pubkey == UNKNOWN_STRING){
+                    //get the actor account info and use it
+
+                      string accQuery = "SELECT * FROM getaccountpubkeyandid('"+
+                      actoraccount  +"');";
+                      
+                      PGresult *res = PQexec(conn, accQuery.c_str());
+                      if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                      terminalerror("xferaddressgetaccountinf",accQuery,conn,res);
+                        return;
+                      }
+                     
+                    
+                      int rec_count = PQntuples(res);
+
+                      if (rec_count > 1){
+                         terminalerror("xferaddressgetaccountinf",accQuery,conn,res);
+                        return;
+                      }
+ 
+                      pubkey = PQgetvalue(res, 0, 1);
+                      owneracct = actoraccount;
+ 
+                       PQclear(res);
+                  }else { //insert the acount info for the pub key used, do not mod if exists.
+                    string insertQuery = "SELECT insupdaccounts("+
+                      bnums+",'"+
+                      owneracct+"','"+
+                      pubkey+"','"+
+                      blocktimestamp +"','false');";
+                      
+                    PGresult *res = PQexec(conn, insertQuery.c_str());
+                    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                      terminalerror("xferaddressinsupdaccounts",insertQuery,conn,res);
+                      return;
+                    }
+                    PQclear(res);
+                  }
+//end do pubkey and account
+
                   string insertQuery = "SELECT upddomainowner('"+
                       domainname+"','"+
                       owneracct +"');";
@@ -1747,12 +1789,12 @@ public:
                   PQclear(res);
                 
                 
-                   insertQuery = "SELECT delpubaddresses('"+
+                   insertQuery = "SELECT clearpubaddresses('"+
                       handle+"');";
                       
                   res = PQexec(conn, insertQuery.c_str());
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                   terminalerror("remalladdrdelpubaddrs",insertQuery,conn,res);
+                   terminalerror("remalladdrclearpubaddrs",insertQuery,conn,res);
                     return;
                   }
                   PQclear(res);
@@ -1878,7 +1920,7 @@ public:
                 else if ((actionname == "wraptokens")){
                    string payeracct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                   string payeeacct = "fio.oracle";
-                  string memo = "UNKNOWN";
+                  string memo = "";
                   string TRNSTYPEWRAP = "wrap";
                   string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["amount"],DISALLOW_EMPTY_VALUES);
 
@@ -1933,7 +1975,7 @@ public:
                 } //end if action is unstakefio
                  else if ((actionname == "retire")){
                   string payeracct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
-                  string payeeacct = "";
+                  string payeeacct = "fio.token";
                   string TRNSTYPERETIRE = "retire";
                   string memo = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["memo"],ALLOW_EMPTY_VALUES);
                   string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["quantity"],DISALLOW_EMPTY_VALUES);
