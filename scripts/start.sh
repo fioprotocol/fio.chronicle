@@ -1,7 +1,41 @@
 #!/usr/bin/env bash
 
-# Debug
-#set -x
+function usage() {
+   printf "Usage: $0 OPTION...
+  -r      Reset FIO.Chronicle state
+   \\n" "$0" 1>&2
+   exit 1
+}
+
+DEBUG=${DEBUG:-false}
+RESET=${RESET:-false}
+if [ $# -ne 0 ]; then
+   while getopts "dr" opt; do
+      case "${opt}" in
+      d)
+         DEBUG=true
+         set -x
+         ;;
+      r)
+         RESET=true
+         ;;
+      h)
+         usage
+         ;;
+      ?)
+         echo "Invalid Option!" 1>&2
+         usage
+         ;;
+      :)
+         echo "Invalid Option: -${OPTARG} requires an argument." 1>&2
+         usage
+         ;;
+      *)
+         usage
+         ;;
+      esac
+   done
+fi
 
 echo && echo "Starting Fio.Chronicle..."
 
@@ -20,36 +54,24 @@ if [[ ! -d ${INSTALL_DIR} || ! -x ${INSTALL_DIR}/chronicle-receiver ]]; then
   exit 1
 fi
 
-cr_pid=$(pgrep chronicle)
-if [[ -n $cr_pid ]]; then
-  echo && echo "WARNING: FIO.Chronicle appears to be running! "
-  echo
-  if yes_or_no "Stop FIO.Chronicle"; then
-    kill -INT ${cr_pid}
-  else
-    echo && echo "FIO.Chronicle must be stopped before proceeding. Exiting..."
-    echo
-    exit 1
-  fi
-fi
-
-sleep 1
-cr_pid=$(pgrep chronicle)
-if [[ -n $cr_pid ]]; then
-  echo && echo "ERROR: FIO.Chronicle is running! Exiting..."
+PID=$(pgrep chronicle)
+if [[ -n $PID ]]; then
+  echo && echo "ERROR: FIO.Chronicle appears to be running! Use the stop script to stop FIO.Chronicle..."
   echo
   exit 1
 fi
 
-echo
-if yes_or_no "Reset FIO.Chronicle state"; then
-  rm -f ${INSTALL_DIR}/data/receiver-state/lock.bin
-  rm -f ${INSTALL_DIR}/data/receiver-state/shared_memory.bin
+if $RESET; then
+  echo && echo "Reset FIO.Chronicle state..." && echo
+  if yes_or_no "Proceed?"; then
+    rm -f ${INSTALL_DIR}/data/receiver-state/lock.bin
+    rm -f ${INSTALL_DIR}/data/receiver-state/shared_memory.bin
+  fi
 fi  
   
 # Start Chronicle
 echo && echo "Starting FIO.Chronicle..."
 pause
 makedir ${INSTALL_DIR}/log
-rm -f ${INSTALL_DIR}/log/chronicle.log
+[[ -e ${INSTALL_DIR}/log/chronicle.log ]] && mv ${INSTALL_DIR}/log/chronicle.log ${INSTALL_DIR}/log/chronicle-`date +%Y-%m-%dT%H%M%S`.log
 ${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --end-block=400000000 2>&1 | tee -a ${INSTALL_DIR}/log/chronicle.log &
