@@ -71,7 +71,7 @@ while true; do
 done
 
 if $SNAPSHOT; then
-  echo && echo "Saving FIO.Chronicle snapshot..." && echo
+  echo && echo "Saving FIO.Chronicle snapshot..."
   makedir ${INSTALL_DIR}/bkups
   # EOS Chronicle
   #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkups/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
