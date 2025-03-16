@@ -48,13 +48,13 @@ cd $( dirname "${BASH_SOURCE[0]}" )/..
 INSTALL_DIR=/opt/fio-chronicle
   
 # Stop chronicle (note this depends on an idle postgres)
-echo && echo -n "Stopping FIO.Chronicle gracefully..." & echo
+echo && echo "Stopping FIO.Chronicle gracefully..."
 COUNTER=0
 while true; do
    let COUNTER++
    PID=$(pgrep chronicle)
    if [[ -z $cr_pid ]]; then
-     echo && echo "FIO.Chronicle is NOT running."
+     echo && echo "FIO.Chronicle is stopped."
      break
    fi
 
@@ -63,7 +63,7 @@ while true; do
    fi
 
    if [[ COUNTER > 200 ]]; then
-     echo "WARNING: Unable to shut down gracefully, therefore, just shutting down..."
+     echo && echo "WARNING: Unable to shut down gracefully, therefore, just shutting down..."
      pause
      kill -INT $PID
      break
