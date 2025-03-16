@@ -65,6 +65,15 @@ if [[ -n $PID ]]; then
   exit 1
 fi
 
+# Note: Do snapshot before reset
+if $SNAPSHOT; then
+  echo && echo "Saving FIO.Chronicle snapshot..." && echo
+  makedir ${INSTALL_DIR}/bkups
+  # EOS Chronicle
+  #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkups/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
+  tar -czvf ${INSTALL_DIR}/bkups/fc-snapshot-`date +%Y-%m-%dT%H%M%S`.tar.gz ${INSTALL_DIR}/data/receiver-state/
+fi
+  
 if $RESET; then
   echo && echo "Reset FIO.Chronicle state..." && echo
   if yes_or_no "Proceed?"; then
@@ -73,11 +82,6 @@ if $RESET; then
   fi
 fi
 
-if $SNAPSHOT; then
-  echo && echo "Saving FIO.Chronicle snapshot..." && echo
-  ${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkups/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
-fi
-  
 # Start Chronicle
 echo && echo "Starting FIO.Chronicle..."
 pause
