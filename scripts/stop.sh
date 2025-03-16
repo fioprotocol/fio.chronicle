@@ -9,7 +9,7 @@ function usage() {
 DEBUG=${DEBUG:-false}
 SNAPSHOT=${SNAPSHOT:-false}
 if [ $# -ne 0 ]; then
-   while getopts "d" opt; do
+   while getopts "ds" opt; do
       case "${opt}" in
       d)
          DEBUG=true
