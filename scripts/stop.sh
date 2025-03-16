@@ -46,21 +46,27 @@ cd $( dirname "${BASH_SOURCE[0]}" )/..
 . ${SCRIPTS_DIR}/utils.sh
 
 INSTALL_DIR=/opt/fio-chronicle
-
-cr_pid=$(pgrep chronicle)
-if [[ -z $cr_pid ]]; then
-  echo && echo "ERROR: FIO.Chronicle does NOT appear to be running! "
-  exit 1
-fi
   
 # Stop chronicle (note this depends on an idle postgres)
-echo && echo -n "Stopping FIO.Chronicle..."
+echo && echo -n "Stopping FIO.Chronicle gracefully..." & echo
+COUNTER=0
 while true; do
+   let COUNTER++
    PID=$(pgrep chronicle)
+   if [[ -z $cr_pid ]]; then
+     echo && echo "FIO.Chronicle is NOT running."
+     break
+   fi
+
    if [[ -n $PID ]]; then
       ps -ef | grep -v grep | grep relicdb | grep -q idle && kill -INT $PID && echo && echo " Stopped!"
-   else
-      break
+   fi
+
+   if [[ COUNTER > 200 ]]; then
+     echo "WARNING: Unable to shut down gracefully, therefore, just shutting down..."
+     pause
+     kill -INT $PID
+     break
    fi
 done
 
