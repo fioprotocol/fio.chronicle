@@ -9,8 +9,9 @@ function usage() {
 
 DEBUG=${DEBUG:-false}
 RESET=${RESET:-false}
+SNAPSHOT=${SNAPSHOT:-false}
 if [ $# -ne 0 ]; then
-   while getopts "dr" opt; do
+   while getopts "drs" opt; do
       case "${opt}" in
       d)
          DEBUG=true
@@ -18,6 +19,9 @@ if [ $# -ne 0 ]; then
          ;;
       r)
          RESET=true
+         ;;
+      s)
+         SNAPSHOT=true
          ;;
       h)
          usage
@@ -67,7 +71,12 @@ if $RESET; then
     rm -f ${INSTALL_DIR}/data/receiver-state/lock.bin
     rm -f ${INSTALL_DIR}/data/receiver-state/shared_memory.bin
   fi
-fi  
+fi
+
+if $SNAPSHOT; then
+  echo && echo "Saving FIO.Chronicle snapshot..." && echo
+  ${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkups/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
+fi
   
 # Start Chronicle
 echo && echo "Starting FIO.Chronicle..."

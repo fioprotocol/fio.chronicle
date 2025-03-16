@@ -7,12 +7,16 @@ function usage() {
 }
 
 DEBUG=${DEBUG:-false}
+SNAPSHOT=${SNAPSHOT:-false}
 if [ $# -ne 0 ]; then
    while getopts "d" opt; do
       case "${opt}" in
       d)
          DEBUG=true
          set -x
+         ;;
+      s)
+         SNAPSHOT=true
          ;;
       h)
          usage
@@ -54,10 +58,13 @@ echo && echo -n "Stopping FIO.Chronicle..."
 while true; do
    PID=$(pgrep chronicle)
    if [[ -n $PID ]]; then
-      ps -ef | grep -v grep | grep relicdb | grep -q idle && kill -INT $PID && echo " Stopped!"
+      ps -ef | grep -v grep | grep relicdb | grep -q idle && kill -INT $PID && echo && echo " Stopped!"
    else
       break
    fi
 done
-echo && echo "FIO.Chronicle is stopped!"
-echo
+
+if $SNAPSHOT; then
+  echo && echo "Saving FIO.Chronicle snapshot..." && echo
+  ${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkups/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
+fi
