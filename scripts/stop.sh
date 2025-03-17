@@ -50,31 +50,33 @@ INSTALL_DIR=/opt/fio-chronicle
 # Stop chronicle (note this depends on an idle postgres)
 echo && echo "Stopping FIO.Chronicle gracefully..."
 COUNTER=0
-while true; do
-   let COUNTER++
+while [COUNTER -lt 100 ]; do
+   COUNTER=$(($COUNTER+1))
+
    PID=$(pgrep chronicle)
-   if [[ -z $cr_pid ]]; then
-     echo && echo "FIO.Chronicle is stopped."
-     break
+   if [[ -z $PID ]]; then
+      echo && echo "FIO.Chronicle is stopped."
+      break
    fi
 
    if [[ -n $PID ]]; then
       ps -ef | grep -v grep | grep relicdb | grep -q idle && kill -INT $PID && echo && echo " Stopped!"
    fi
-
-   if [[ COUNTER > 200 ]]; then
-     echo && echo "WARNING: Unable to shut down gracefully, therefore, just shutting down..."
-     pause
-     kill -INT $PID
-     break
-   fi
 done
 
+# Check if really down...
+PID=$(pgrep chronicle)
+if [[ -n $PID ]]; then
+   echo && echo "WARNING: Unable to shut down gracefully! Shut down by force?"
+   pause
+   kill -INT $PID
+fi
+
 if $SNAPSHOT; then
-  echo && echo "Saving FIO.Chronicle snapshot..."
-  makedir ${INSTALL_DIR}/bkups
-  # EOS Chronicle
-  #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkups/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
-  tar -czf ${INSTALL_DIR}/bkups/fc-snapshot-`date +%Y-%m-%dT%H%M%S`.tar.gz -C ${INSTALL_DIR}/data/receiver-state .
+   echo && echo "Saving FIO.Chronicle snapshot..."
+   makedir ${INSTALL_DIR}/bkups
+   # EOS Chronicle
+   #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkups/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
+   tar -czf ${INSTALL_DIR}/bkups/fc-snapshot-`date +%Y-%m-%dT%H%M%S`.tar.gz -C ${INSTALL_DIR}/data/receiver-state .
 fi
 echo

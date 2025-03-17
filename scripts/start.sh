@@ -53,32 +53,32 @@ cd $( dirname "${BASH_SOURCE[0]}" )/..
 INSTALL_DIR=/opt/fio-chronicle
 
 if [[ ! -d ${INSTALL_DIR} || ! -x ${INSTALL_DIR}/chronicle-receiver ]]; then
-  echo && echo "ERROR: FIO.Chronicle binary, ${INSTALL_DIR}/chronicle-receiver, not found!"
-  echo
-  exit 1
+   echo && echo "ERROR: FIO.Chronicle binary, ${INSTALL_DIR}/chronicle-receiver, not found!"
+   echo
+   exit 1
 fi
 
 PID=$(pgrep chronicle)
 if [[ -n $PID ]]; then
-  echo && echo "ERROR: FIO.Chronicle appears to be running! Use the stop script to stop FIO.Chronicle..."
-  echo
-  exit 1
+   echo && echo "ERROR: FIO.Chronicle appears to be running! Use the stop script to stop FIO.Chronicle..."
+   echo
+   exit 1
 fi
 
 # Note: Do snapshot before reset
 if $SNAPSHOT; then
-  echo && echo "Saving FIO.Chronicle snapshot..." && echo
-  makedir ${INSTALL_DIR}/bkups
-  # EOS Chronicle
-  #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkups/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
-  tar -czvf ${INSTALL_DIR}/bkups/fc-snapshot-`date +%Y-%m-%dT%H%M%S`.tar.gz ${INSTALL_DIR}/data/receiver-state/
+   echo && echo "Saving FIO.Chronicle snapshot..." && echo
+   makedir ${INSTALL_DIR}/bkups
+   # EOS Chronicle
+   #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkups/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
+   tar -czvf ${INSTALL_DIR}/bkups/fc-snapshot-`date +%Y-%m-%dT%H%M%S`.tar.gz ${INSTALL_DIR}/data/receiver-state/
 fi
   
 if $RESET; then
-  echo && echo "Reset FIO.Chronicle state..." && echo
-  if yes_or_no "Proceed"; then
-    rm -f ${INSTALL_DIR}/data/receiver-state/lock.bin
-    rm -f ${INSTALL_DIR}/data/receiver-state/shared_memory.bin
+   echo && echo "Reset FIO.Chronicle state..." && echo
+   if yes_or_no "Proceed"; then
+      rm -f ${INSTALL_DIR}/data/receiver-state/lock.bin
+      rm -f ${INSTALL_DIR}/data/receiver-state/shared_memory.bin
   fi
 fi
 
