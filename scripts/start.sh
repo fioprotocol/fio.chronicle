@@ -76,7 +76,7 @@ fi
   
 if $RESET; then
   echo && echo "Reset FIO.Chronicle state..." && echo
-  if yes_or_no "Proceed?"; then
+  if yes_or_no "Proceed"; then
     rm -f ${INSTALL_DIR}/data/receiver-state/lock.bin
     rm -f ${INSTALL_DIR}/data/receiver-state/shared_memory.bin
   fi
