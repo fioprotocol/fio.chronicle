@@ -50,7 +50,7 @@ INSTALL_DIR=/opt/fio-chronicle
 # Stop chronicle (note this depends on an idle postgres)
 echo && echo "Stopping FIO.Chronicle gracefully..."
 COUNTER=0
-while [COUNTER -lt 100 ]; do
+while [ $COUNTER -lt 100 ]; do
    COUNTER=$(($COUNTER+1))
 
    PID=$(pgrep chronicle)
