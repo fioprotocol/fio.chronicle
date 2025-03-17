@@ -3,6 +3,7 @@
 #include "rapidjson/reader.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
+#include <boost/algorithm/string/replace.hpp> 
 #include <libpq-fe.h>
 #include <iostream>
 #include <fc/log/logger.hpp>
@@ -37,7 +38,7 @@ inline string getjsonstring(string defaultv, rapidjson::Value& v, bool allowempt
 
   if (!v.IsNull()){
     if (v.IsString()){
-      string tv = v.GetString();
+      std::string tv = v.GetString();
       if(allowempty)
       {
         return tv;
@@ -55,7 +56,8 @@ inline string getjsonstring(string defaultv, rapidjson::Value& v, bool allowempt
         v.Accept(writer);
 
         // Get the JSON string from the buffer
-        return  buffer.GetString();
+        std::string tv = buffer.GetString();
+        return tv;
 
     }else if (v.IsNumber()){
        rapidjson::StringBuffer buffer;
@@ -67,4 +69,27 @@ inline string getjsonstring(string defaultv, rapidjson::Value& v, bool allowempt
   }
   return retval;
 }
+
+// Function to escape SQL special characters in a string using boost::replace_all
+inline std::string escapesqlstring(const std::string &input, PGconn *conn) {
+    char *escaped = PQescapeLiteral(conn, input.c_str(), input.length());
+
+    if (escaped == nullptr) {
+        std::cerr << "Error escaping string: " << PQerrorMessage(conn) << std::endl;
+        return "";
+    }
+
+    // Convert the escaped char* back to a C++ string
+    std::string escapedStr(escaped);
+    PQfreemem(escaped);  // Free the memory allocated by PQescapeLiteral
+    return escapedStr;
+}
+
+inline string getjsonsqlescapedstring(string defaultv, rapidjson::Value& v, bool allowempty, PGconn *conn){
+  string retval = getjsonstring(defaultv, v, allowempty);
+         std::string tv =   escapesqlstring(retval, conn); 
+  return tv;
+}
+
+
 
