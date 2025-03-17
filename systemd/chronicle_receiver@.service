@@ -1,8 +1,8 @@
 [Unit]
-Description=Chronicle receiver
+Description=FIO Chronicle
 [Service]
 Type=simple
-ExecStart=/usr/local/sbin/chronicle-receiver --config-dir=/srv/%i/chronicle-config --data-dir=/srv/%i/chronicle-data
+ExecStart=/usr/local/sbin/chronicle-receiver --config-dir=/srv/%i/chronicle-config --data-dir=/srv/%i/chronicle-data --end-block=400000000
 TimeoutStopSec=300s
 Restart=on-success
 RestartSec=10

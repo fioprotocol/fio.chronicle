@@ -1,7 +1,44 @@
 #!/usr/bin/env bash
 
-# Debug
-#set -x
+function usage() {
+   printf "Usage: $0 OPTION...
+  -i       Intall Directory (FIO.Chronicle binary). Default: /opt/fio-chronicle
+   \\n" "$0" 1>&2
+   exit 1
+}
+
+DEBUG=${DEBUG:-false}
+SYSTEM_INSTALL=${SYSTEM_INSTALL:-false}
+if [ $# -ne 0 ]; then
+   while getopts "hdi:s" opt; do
+      case "${opt}" in
+      d)
+         DEBUG=true
+         set -x
+         ;;
+      i)
+         INSTALL_DIR=$OPTARG
+         ;;
+      s)
+         SYSTEM_INSTALL=true
+         ;;
+      h)
+         usage
+         ;;
+      ?)
+         echo "Invalid Option!" 1>&2
+         usage
+         ;;
+      :)
+         echo "Invalid Option: -${OPTARG} requires an argument." 1>&2
+         usage
+         ;;
+      *)
+         usage
+         ;;
+      esac
+   done
+fi
 
 echo && echo "Installing Fio.Chronicle..."
 
@@ -37,11 +74,19 @@ if [[ $? -ne 0 ]]; then
   exit 1
 fi
 
-HOME_DIR=$(pwd)
-BUILD_DIR=${HOME_DIR}/build
-CONFIG_DIR=${HOME_DIR}/config
+PROJECT_DIR=$(pwd)
+BUILD_DIR=${PROJECT_DIR}/build
+CONFIG_DIR=${PROJECT_DIR}/config
 
-if [[ -e ${BUILD_DIR}/chronicle-receiver ]]; then
+if [[ ! -e ${BUILD_DIR}/chronicle-receiver ]]; then
+  echo && echo "ERROR: Unable to install FIO.Chronicle; ${BUILD_DIR}/chronicle-receiver does not exist!" && echo
+  exit 1
+fi
+
+# Do either;
+# local install (into /opt)
+# system install (/usr/local/bin, etc/fio/chronicle, /var/lib/fio-chronicle)
+if ! $SYSTEM_INSTALL; then
   makedir /opt/fio-chronicle
   makedir /opt/fio-chronicle/config
   makedir /opt/fio-chronicle/data
@@ -49,23 +94,32 @@ if [[ -e ${BUILD_DIR}/chronicle-receiver ]]; then
   cp ${BUILD_DIR}/chronicle-receiver /opt/fio-chronicle
 
   if [[ -e /opt/fio-chronicle/config/config.ini ]]; then
-    echo
-    echo "WARNING: A FIO.Chronicle configuration already exists!"
-    echo
+    echo && echo "WARNING: A FIO.Chronicle configuration already exists!" && echo
     if yes_or_no "Overwrite /opt/fio-chronicle/config/config.ini"; then
       mv /opt/fio-chronicle/config/config.ini /opt/fio-chronicle/config/config.ini.$(date +%Y%m%d_%H%M%S)
-      cp ${CONFIG_DIR}/config.ini.relic /opt/fio-chronicle/config/config.ini
     fi
-  else
-    cp ${CONFIG_DIR}/config.ini.relic /opt/fio-chronicle/config/config.ini
   fi
+  cp ${CONFIG_DIR}/config.ini.relic /opt/fio-chronicle/config/config.ini
 
-  cp -r ${HOME_DIR}/testing /opt/fio-chronicle
+  cp -r ${PROJECT_DIR}/testing /opt/fio-chronicle
 
-  echo
-  echo "FIO.Chronicle has been successfully installed to /opt/fio-chronicle."
+  echo && echo "FIO.Chronicle has been successfully installed to /opt!"
 else
-  echo
-  echo "ERROR: Unable to install FIO.Chronicle; ${BUILD_DIR}/chronicle-receiver does not exist!"
+  sudo cp ${BUILD_DIR}/chronicle-receiver /usr/local/sbin
+  sudo cp ${PROJECT_DIR}/systemd/chronicle_receiver@.service /etc/systemd/system
+
+  sudo mkdir -p /srv/fio/chronicle-data && sudo mkdir -p /srv/fio/chronicle-config
+
+  if [[ -e /srv/fio/chronicle-config/config.ini ]]; then
+    echo && echo "WARNING: A FIO.Chronicle configuration already exists!" && echo
+    if yes_or_no "Overwrite /srv/fio/chronicle-config/config.ini"; then
+      sudo mv /srv/fio/chronicle-config/config.ini /srv/fio/chronicle-config/config.ini.$(date +%Y%m%d_%H%M%S)
+    fi
+  fi
+  sudo cp ${CONFIG_DIR}/config.ini.relic /srv/fio/chronicle-config/config.ini
+
+  # Set up systemd
+
+  echo && echo "FIO.Chronicle has been successfully installed to /usr/local/sbin!"
 fi
 echo
