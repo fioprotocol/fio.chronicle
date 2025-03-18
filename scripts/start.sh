@@ -71,7 +71,7 @@ if $SNAPSHOT; then
    makedir ${INSTALL_DIR}/bkups
    # EOS Chronicle
    #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkups/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
-   tar -czvf ${INSTALL_DIR}/bkups/fc-snapshot-`date +%Y-%m-%dT%H%M%S`.tar.gz ${INSTALL_DIR}/data/receiver-state/
+   tar -czf ${INSTALL_DIR}/bkups/fc-snapshot-`date +%Y-%m-%dT%H%M%S`.tar.gz ${INSTALL_DIR}/data/receiver-state/
 fi
   
 if $RESET; then
