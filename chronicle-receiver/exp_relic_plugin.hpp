@@ -4,6 +4,7 @@
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 #include <boost/algorithm/string/replace.hpp> 
+#include <boost/algorithm/string.hpp>
 #include <libpq-fe.h>
 #include <iostream>
 #include <fc/log/logger.hpp>
@@ -82,6 +83,16 @@ inline std::string escapesqlstring(const std::string &input, PGconn *conn) {
     // Convert the escaped char* back to a C++ string
     std::string escapedStr(escaped);
     PQfreemem(escaped);  // Free the memory allocated by PQescapeLiteral
+   
+    //look for chars before first single quote and remove.
+    //sometimes PQescape returning " E'string' sometimes 'string'"
+     if (!boost::algorithm::starts_with(escapedStr, "'")) {
+        // Strip up to the first single quote
+        size_t quote_pos = escapedStr.find("'");
+        if ((quote_pos != std::string::npos) && (quote_pos < 3)) {
+            escapedStr = escapedStr.substr(quote_pos); // Get the substring starting from the first single quote
+        } 
+    }
     return escapedStr;
 }
 
