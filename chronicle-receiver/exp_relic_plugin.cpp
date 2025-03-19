@@ -580,7 +580,7 @@ public:
                        actionaccount+"','"+
                         actionname+"','"+
                         tpid+"',"+
-                        feeamount+",E"+ 
+                        feeamount+","+ 
                         requestdata+",'"+
                         response+"','"+
                         status+"');";
@@ -680,7 +680,7 @@ public:
                   }else { //insert the acount info for the pub key used, do not mod if exists.
                     string insertQuery = "SELECT insupdaccounts("+
                       bnums+",'"+
-                      owneracct+"',E"+
+                      owneracct+"',"+
                       pubkey+",'"+
                       blocktimestamp +"','false');";
                       
@@ -740,7 +740,7 @@ public:
                       bnums+",'"+
                       domainname +"','" +
                       owneracct +"','" +
-                      handle +"',E" +
+                      handle +"'," +
                       pubkey +",'" +
                       encryptkeyisset +"'," +
                       bundledtxcount +",'" +
@@ -774,7 +774,7 @@ public:
                       bnums+",'"+
                       handle+"','"+
                        chaincode+"','"+
-                        tokencode+"',E"+
+                        tokencode+"',"+
                          pubkey+");";
                       
                   res = PQexec(conn, insertQuery.c_str());
@@ -869,7 +869,7 @@ public:
                   }else { //insert the acount info for the pub key used, do not mod if exists.
                     string insertQuery = "SELECT insupdaccounts("+
                       bnums+",'"+
-                      owneracct+"',E"+
+                      owneracct+"',"+
                       pubkey+",'"+
                       blocktimestamp +"','false');";
                       
@@ -1195,7 +1195,7 @@ public:
                       bnums+","+
                       fiochainrequestid+",'"+
                       payerhandle+"','"+
-                      payeehandle+"',E"+
+                      payeehandle+"',"+
                       content+",'"+
                       REQUESTSTATUSPENDING+"','"+
                        blocktimestamp+"');";
@@ -1249,7 +1249,7 @@ public:
                       bnums+","+
                       fiochainrequestid+",'"+
                       payerhandle+"','"+
-                      payeehandle+"',E"+
+                      payeehandle+"',"+
                       content+",'"+
                       REQUESTSTATUSSENTTOBC+"','"+
                        blocktimestamp+"');";
@@ -1354,7 +1354,7 @@ public:
                   }else { //insert the acount info for the pub key used, do not mod if exists.
                     string insertQuery = "SELECT insupdaccounts("+
                       bnums+",'"+
-                      owneracct+"',E"+
+                      owneracct+"',"+
                       pubkey+",'"+
                       blocktimestamp +"','false');";
                       
@@ -1369,7 +1369,7 @@ public:
                       bnums+",'"+
                       domain +"','" +
                       owneracct +"','" +
-                      handle +"',E" +
+                      handle +"'," +
                       pubkey +",'" +
                       encryptkeyisset +"'," +
                       bundledtxcount +",'" +
@@ -1419,7 +1419,7 @@ public:
                       bnums+",'"+
                       handle+"','"+
                        chaincode+"','"+
-                        tokencode+"',E"+
+                        tokencode+"',"+
                          pubkey+");";
                       
                   res = PQexec(conn, insertQuery.c_str());
@@ -1548,11 +1548,11 @@ public:
                         insertQuery = "SELECT insupdnftsignatures("+
                           bnums+",'"+
                           handle+"','"+
-                          chaincode+"',E"+
-                          contractaddress+",E"+
-                            tokenid+",E"+
-                            url+",E"+
-                            hash+",E"+
+                          chaincode+"',"+
+                          contractaddress+","+
+                            tokenid+","+
+                            url+","+
+                            hash+","+
                             metadata+");";
                           
                       res = PQexec(conn, insertQuery.c_str());
@@ -1702,7 +1702,7 @@ public:
                   }else { //insert the acount info for the pub key used, do not mod if exists.
                     string insertQuery = "SELECT insupdaccounts("+
                       bnums+",'"+
-                      owneracct+"',E"+
+                      owneracct+"',"+
                       pubkey+",'"+
                       blocktimestamp +"','false');";
                       
@@ -1722,7 +1722,7 @@ public:
                   string insertQuery = "SELECT updhandlesxferowner("+
                        bnums+",'"+
                       handle +"','" +
-                       owneracct +"',E" +
+                       owneracct +"'," +
                         pubkey +",'" +
                          encryptkeyisset +"');";
                       
@@ -1776,7 +1776,7 @@ public:
                       bnums+",'"+
                       handle+"','"+
                        chaincode+"','"+
-                        tokencode+"',E"+
+                        tokencode+"',"+
                          pubkey+");";
                       
                   res = PQexec(conn, insertQuery.c_str());
@@ -1867,7 +1867,7 @@ public:
                           bnums+",'"+
                           handle+"','"+
                           chaincode+"','"+
-                            tokencode+"',E"+
+                            tokencode+"',"+
                             pubaddress+");";
                           
                       res = PQexec(conn, insertQuery.c_str());
@@ -1880,7 +1880,7 @@ public:
                       if (chaincode == "FIO" && (tokencode == "FIO" || tokencode == "*")){
                           insertQuery = "SELECT updhandlesencryptkey("+
                            bnums+",'"+
-                          handle +"',E" +
+                          handle +"'," +
                           pubaddress +");";
                           
                         res = PQexec(conn, insertQuery.c_str());
@@ -2025,7 +2025,7 @@ public:
                       payeracct+"','"+
                       payeeacct+"',"+
                       sufamount+",'"+
-                      TRNSTYPERETIRE +"',E"+
+                      TRNSTYPERETIRE +"',"+
                       memo+",'"+
                       blocktimestamp+"');";
                        
@@ -2047,7 +2047,7 @@ public:
                     actionaccount+"','"+
                     receiveraccount+"',"+
                     actionordinal+",'"+
-                    actionname+"',E"+
+                    actionname+"',"+
                     requestdata+",'"+
                     blocktimestamp+"');";
                 
@@ -2120,7 +2120,7 @@ public:
                       payeracct+"','"+
                       payeeacct+"',"+
                       sufamount+",'"+
-                      trnstype +"',E"+
+                      trnstype +"',"+
                       memo+",'"+
                       blocktimestamp+"');";
                       
@@ -2132,8 +2132,8 @@ public:
                   PQclear(res);
                 } //end if action is transfer
                  else if ((actionname == "issue")&&(receiveraccount == "fio.token")){
-                  string payeracct = "eosio";               
-                  string payeeacct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["to"],DISALLOW_EMPTY_VALUES);
+                  string payeracct = "fio.token";               
+                  string payeeacct = "eosio";
                   string memo = getjsonsqlescapedstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["memo"],DISALLOW_EMPTY_VALUES,conn);
                   string TRNSTYPETOKENMINT = "token_mint";
                   string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["quantity"],DISALLOW_EMPTY_VALUES);
@@ -2149,7 +2149,7 @@ public:
                       payeracct+"','"+
                       payeeacct+"',"+
                       sufamount+",'"+
-                      TRNSTYPETOKENMINT +"',E"+
+                      TRNSTYPETOKENMINT +"',"+
                       memo+",'"+
                       blocktimestamp+"');";
                       
@@ -2166,7 +2166,7 @@ public:
                   string pubkey = escapesqlstring(pubkeyt,conn);
                   string insertQuery = "SELECT insupdaccounts("+
                       bnums+",'"+
-                      accountnm+"',E"+
+                      accountnm+"',"+
                       pubkey+",'"+
                       blocktimestamp +"','true');";
                       

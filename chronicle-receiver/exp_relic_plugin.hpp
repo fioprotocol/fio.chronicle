@@ -84,14 +84,9 @@ inline std::string escapesqlstring(const std::string &input, PGconn *conn) {
     std::string escapedStr(escaped);
     PQfreemem(escaped);  // Free the memory allocated by PQescapeLiteral
    
-    //look for chars before first single quote and remove.
-    //sometimes PQescape returning " E'string' sometimes 'string'"
-     if (!boost::algorithm::starts_with(escapedStr, "'")) {
-        // Strip up to the first single quote
-        size_t quote_pos = escapedStr.find("'");
-        if ((quote_pos != std::string::npos) && (quote_pos < 3)) {
-            escapedStr = escapedStr.substr(quote_pos); // Get the substring starting from the first single quote
-        } 
+    //add the E if there is not prefix on the string before the '
+     if (boost::algorithm::starts_with(escapedStr, "'")) {
+       return " E"+escapedStr;
     }
     return escapedStr;
 }
