@@ -391,7 +391,6 @@ public:
                     
                       string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["kvo"]["value"]["name"],ALLOW_EMPTY_VALUES);
                       string expiration = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)object["kvo"]["value"]["expiration"],ALLOW_EMPTY_VALUES);
-                      string bundlecount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["kvo"]["value"]["bundleeligiblecountdown"],ALLOW_EMPTY_VALUES);
                       string handlebnum = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["block_num"],ALLOW_EMPTY_VALUES);
 
                     //if this handle is burnaddress then skip it
@@ -730,7 +729,6 @@ public:
 
                 if(actionname == "regdomadd") { 
                   string encryptkeyisset = "false";
-                  string bundledtxcount = "100";
                   string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
                   string HANDLESTATUSACTIVE = "active";
                   string chaincode = "FIO";
@@ -742,8 +740,7 @@ public:
                       owneracct +"','" +
                       handle +"'," +
                       pubkey +",'" +
-                      encryptkeyisset +"'," +
-                      bundledtxcount +",'" +
+                      encryptkeyisset +"','" +
                       expirationtimestamp +"','" +
                       HANDLESTATUSACTIVE +"');";
                       
@@ -1318,7 +1315,6 @@ public:
                   string pubkey = escapesqlstring(pubkeyt,conn);
 
                   string encryptkeyisset = "false";
-                  string bundledtxcount = "100";
                   string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
                   string HANDLESTATUSACTIVE = "active";
                   string chaincode = "FIO";
@@ -1371,8 +1367,7 @@ public:
                       owneracct +"','" +
                       handle +"'," +
                       pubkey +",'" +
-                      encryptkeyisset +"'," +
-                      bundledtxcount +",'" +
+                      encryptkeyisset +"','" +
                       expirationtimestamp +"','" +
                       HANDLESTATUSACTIVE +"');";
                       
@@ -1437,28 +1432,17 @@ public:
                   string HANDLEACTIVITYRENEW = "renew";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
-                  string insertQuery = "SELECT updhandlesrenewbundles("+
-                       bnums+",'"+
-                      handle +"','" +
-                      expirationtimestamp +"');";
-                      
-                  PGresult *res = PQexec(conn, insertQuery.c_str());
-                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                   terminalerror("renewaddr",insertQuery,conn,res);
-                    return;
-                  }
-                  PQclear(res);
 
                   string HANDLEACTIVITYTYPEREGISTER = "register";
                   
-                  insertQuery = "SELECT inshandleactivities("+
+                  string insertQuery = "SELECT inshandleactivities("+
                   boost::lexical_cast<std::string>(fktransactionid)+","+
                       bnums+",'"+
                       handle+"','"+
                       HANDLEACTIVITYRENEW+"','"+
                       blocktimestamp+"');";
                       
-                  res = PQexec(conn, insertQuery.c_str());
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
                    terminalerror("renewaddrhandleact",insertQuery,conn,res);
                     return;
@@ -1473,26 +1457,15 @@ public:
                   string HANDLEACTIVITYADDBUNDLES = "add_bundles";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
-                  string insertQuery = "SELECT updhandlesaddbundles("+
-                       bnums+",'"+
-                      handle +"'," +
-                      bundlesetss +");";
-                      
-                  PGresult *res = PQexec(conn, insertQuery.c_str());
-                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                   terminalerror("addbundles",insertQuery,conn,res);
-                    return;
-                  }
-                  PQclear(res);
                   
-                  insertQuery = "SELECT inshandleactivities("+
+                  string insertQuery = "SELECT inshandleactivities("+
                   boost::lexical_cast<std::string>(fktransactionid)+","+
                       bnums+",'"+
                       handle+"','"+
                       HANDLEACTIVITYADDBUNDLES+"','"+
                       blocktimestamp+"');";
                       
-                  res = PQexec(conn, insertQuery.c_str());
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
                    terminalerror("addbundleshandleact",insertQuery,conn,res);
                     return;
