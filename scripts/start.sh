@@ -1,30 +1,32 @@
 #!/usr/bin/env bash
 
 function usage() {
-   printf "Usage: $0 OPTION...
-  -r      Reset FIO.Chronicle state
+   printf "\\nUsage: $0 OPTION...
+  -d     Turn debug on
+  -h     Display usage
+  -i     FIO.Chronicle Binary Directory
+  -r     Reset FIO.Chronicle state
    \\n" "$0" 1>&2
    exit 1
 }
 
 DEBUG=${DEBUG:-false}
 RESET=${RESET:-false}
-SNAPSHOT=${SNAPSHOT:-false}
 if [ $# -ne 0 ]; then
-   while getopts "drs" opt; do
+   while getopts "dhi:r" opt; do
       case "${opt}" in
       d)
          DEBUG=true
          set -x
          ;;
-      r)
-         RESET=true
-         ;;
-      s)
-         SNAPSHOT=true
-         ;;
       h)
          usage
+         ;;
+      i)
+         INSTALL_DIR=${OPTARG}
+         ;;
+      r)
+         RESET=true
          ;;
       ?)
          echo "Invalid Option!" 1>&2
@@ -41,6 +43,13 @@ if [ $# -ne 0 ]; then
    done
 fi
 
+INSTALL_DIR=${INSTALL_DIR:-/opt/fio-chronicle}
+if [[ ! -e ${INSTALL_DIR}/chronicle-receiver ]]; then
+   echo && echo "ERROR: ${INSTALL_DIR}/chronicle-receiver not found! Use '-i' to specify the FIO.Chronicle binary directory."
+   usage
+   exit 1
+fi
+
 echo && echo "Starting Fio.Chronicle..."
 
 # Get Scripts dir and ensure we're in the repo root and not inside of scripts
@@ -49,8 +58,6 @@ cd $( dirname "${BASH_SOURCE[0]}" )/..
 
 # Load utility functions
 . ${SCRIPTS_DIR}/utils.sh
-
-INSTALL_DIR=/opt/fio-chronicle
 
 if [[ ! -d ${INSTALL_DIR} || ! -x ${INSTALL_DIR}/chronicle-receiver ]]; then
    echo && echo "ERROR: FIO.Chronicle binary, ${INSTALL_DIR}/chronicle-receiver, not found!"
@@ -65,15 +72,6 @@ if [[ -n $PID ]]; then
    exit 1
 fi
 
-# Note: Do snapshot before reset
-if $SNAPSHOT; then
-   echo && echo "Saving FIO.Chronicle snapshot..." && echo
-   makedir ${INSTALL_DIR}/bkups
-   # EOS Chronicle
-   #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkups/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
-   tar -czf ${INSTALL_DIR}/bkups/fc-snapshot-`date +%Y-%m-%dT%H%M%S`.tar.gz ${INSTALL_DIR}/data/receiver-state/
-fi
-  
 if $RESET; then
    echo && echo "Reset FIO.Chronicle state..." && echo
    if yes_or_no "Proceed"; then

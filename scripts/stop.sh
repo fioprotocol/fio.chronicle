@@ -1,22 +1,20 @@
 #!/usr/bin/env bash
 
 function usage() {
-   printf "Usage: $0 OPTION...
+   printf "\\nUsage: $0 OPTION...
+  -d     Turn debug on
+  -h     Display usage
    \\n" "$0" 1>&2
    exit 1
 }
 
 DEBUG=${DEBUG:-false}
-SNAPSHOT=${SNAPSHOT:-false}
 if [ $# -ne 0 ]; then
-   while getopts "ds" opt; do
+   while getopts "dh" opt; do
       case "${opt}" in
       d)
          DEBUG=true
          set -x
-         ;;
-      s)
-         SNAPSHOT=true
          ;;
       h)
          usage
@@ -44,8 +42,6 @@ cd $( dirname "${BASH_SOURCE[0]}" )/..
 
 # Load utility functions
 . ${SCRIPTS_DIR}/utils.sh
-
-INSTALL_DIR=/opt/fio-chronicle
   
 # Stop chronicle (note this depends on an idle postgres)
 echo && echo "Stopping FIO.Chronicle gracefully..."
@@ -70,13 +66,5 @@ if [[ -n $PID ]]; then
    echo && echo "WARNING: Unable to shut down gracefully! Shut down by force?"
    pause
    kill -INT $PID
-fi
-
-if $SNAPSHOT; then
-   echo && echo "Saving FIO.Chronicle snapshot..."
-   makedir ${INSTALL_DIR}/bkups
-   # EOS Chronicle
-   #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkups/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
-   tar -czf ${INSTALL_DIR}/bkups/fc-snapshot-`date +%Y-%m-%dT%H%M%S`.tar.gz -C ${INSTALL_DIR}/data/receiver-state .
 fi
 echo
