@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 
+# Get Scripts dir and ensure we're in the repo root and not inside of scripts
+SCRIPTS_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+cd $( dirname "${BASH_SOURCE[0]}" )/..
+
+# Load utility functions
+. ${SCRIPTS_DIR}/utils.sh
+
 function usage() {
    printf "\\nUsage: $0 OPTION...
-  -d     Turn debug on
+  -x     Turn debug on
   -h     Display usage
    \\n" "$0" 1>&2
    exit 1
@@ -10,9 +17,9 @@ function usage() {
 
 DEBUG=${DEBUG:-false}
 if [ $# -ne 0 ]; then
-   while getopts "dh" opt; do
+   while getopts "xh" opt; do
       case "${opt}" in
-      d)
+      x)
          DEBUG=true
          set -x
          ;;
@@ -35,13 +42,6 @@ if [ $# -ne 0 ]; then
 fi
 
 echo && echo "Stopping Fio.Chronicle..."
-
-# Get Scripts dir and ensure we're in the repo root and not inside of scripts
-SCRIPTS_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
-cd $( dirname "${BASH_SOURCE[0]}" )/..
-
-# Load utility functions
-. ${SCRIPTS_DIR}/utils.sh
   
 # Stop chronicle (note this depends on an idle postgres)
 echo && echo "Stopping FIO.Chronicle gracefully..."

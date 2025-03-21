@@ -1,11 +1,19 @@
 #!/usr/bin/env bash
 
+# Get Scripts dir and ensure we're in the repo root and not inside of scripts
+SCRIPTS_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+cd $( dirname "${BASH_SOURCE[0]}" )/..
+
+# Load utility functions
+. ${SCRIPTS_DIR}/utils.sh
+
 function usage() {
    printf "\\nUsage: $0 OPTION...
-  -d     Turn debug on
-  -h     Display usage
-  -i     FIO.Chronicle Binary Directory
+  -b     FIO.Chronicle Binary Directory
+  -d     FIO.Chronicle Data (State) Directory
   -r     Reset FIO.Chronicle state
+  -x     Turn debug on
+  -h     Display usage
    \\n" "$0" 1>&2
    exit 1
 }
@@ -13,20 +21,26 @@ function usage() {
 DEBUG=${DEBUG:-false}
 RESET=${RESET:-false}
 if [ $# -ne 0 ]; then
-   while getopts "dhi:r" opt; do
+   while getopts "b:d:l:rxh" opt; do
       case "${opt}" in
+      b)
+         BIN_DIR=${OPTARG}
+         ;;
       d)
+         DATA_DIR=${OPTARG}
+         ;;
+      l)
+         LOG_DIR=${OPTARG}
+         ;;
+      r)
+         RESET=true
+         ;;
+      x)
          DEBUG=true
          set -x
          ;;
       h)
          usage
-         ;;
-      i)
-         INSTALL_DIR=${OPTARG}
-         ;;
-      r)
-         RESET=true
          ;;
       ?)
          echo "Invalid Option!" 1>&2
@@ -43,27 +57,37 @@ if [ $# -ne 0 ]; then
    done
 fi
 
-INSTALL_DIR=${INSTALL_DIR:-/opt/fio-chronicle}
-if [[ ! -e ${INSTALL_DIR}/chronicle-receiver ]]; then
-   echo && echo "ERROR: ${INSTALL_DIR}/chronicle-receiver not found! Use '-i' to specify the FIO.Chronicle binary directory."
+# sudo cp ${BUILD_DIR}/chronicle-receiver /usr/local/sbin
+# sudo mkdir -p /srv/fio/chronicle-data && sudo mkdir -p /srv/fio/chronicle-config
+
+BIN_DIR=${BIN_DIR:-/opt/fio-chronicle}
+if [[ ! -z ${BIN_DIR} ]]; then
+   echo && echo "ERROR: ${BIN_DIR}/chronicle-receiver not found! Use '-b' to specify the FIO.Chronicle binary directory."
    usage
    exit 1
 fi
 
-echo && echo "Starting Fio.Chronicle..."
-
-# Get Scripts dir and ensure we're in the repo root and not inside of scripts
-SCRIPTS_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
-cd $( dirname "${BASH_SOURCE[0]}" )/..
-
-# Load utility functions
-. ${SCRIPTS_DIR}/utils.sh
-
-if [[ ! -d ${INSTALL_DIR} || ! -x ${INSTALL_DIR}/chronicle-receiver ]]; then
-   echo && echo "ERROR: FIO.Chronicle binary, ${INSTALL_DIR}/chronicle-receiver, not found!"
+if [[ -n ${BIN_DIR} && ! ( -d ${BIN_DIR} && -x ${BIN_DIR}/chronicle-receiver ) ]]; then
+   echo && echo "ERROR: FIO.Chronicle binary, ${BIN_DIR}/chronicle-receiver, not found!"
    echo
    exit 1
 fi
+
+SYSTEMCTL_INUSE=false
+if [[ -x /usr/local/sbin/chronicle-receiver ]]; then
+   echo && echo "INFO: The FIO.Chronicle receiver appears to be installed as a service"
+   echo "      Proceeding will use systemctl to start FIO.Chronicle receiver..."
+   pause
+   BIN_DIR=/usr/local/sbin/chronicle-receiver
+   SYSTEMCTL_INUSE=true
+   if [[ $RESET ]]; then
+     echo && echo "WARNING: RESET is not possible when using systemctl; Reset state manually..."
+     pause
+   fi
+   RESET=false
+fi
+
+echo && echo "Starting Fio.Chronicle..."
 
 PID=$(pgrep chronicle)
 if [[ -n $PID ]]; then
@@ -75,14 +99,18 @@ fi
 if $RESET; then
    echo && echo "Reset FIO.Chronicle state..." && echo
    if yes_or_no "Proceed"; then
-      rm -f ${INSTALL_DIR}/data/receiver-state/lock.bin
-      rm -f ${INSTALL_DIR}/data/receiver-state/shared_memory.bin
+      rm -f ${DATA_DIR}/lock.bin
+      rm -f ${DATA_DIR}/shared_memory.bin
   fi
 fi
 
 # Start Chronicle
 echo && echo "Starting FIO.Chronicle..."
-pause
-makedir ${INSTALL_DIR}/log
-[[ -e ${INSTALL_DIR}/log/chronicle.log ]] && mv ${INSTALL_DIR}/log/chronicle.log ${INSTALL_DIR}/log/chronicle-`date +%Y-%m-%dT%H%M%S`.log
-${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --end-block=400000000 2>&1 | tee -a ${INSTALL_DIR}/log/chronicle.log &
+if $SYSTEMCTL_INUSE; then
+   sudo systemctl start chronicle-receiver
+else
+   if [[ ${BIN_DIR}/log ]]; then
+      [[ -e ${BIN_DIR}/log/chronicle.log ]] && mv ${BIN_DIR}/log/chronicle.log ${BIN_DIR}/log/chronicle-`date +%Y-%m-%dT%H%M%S`.log
+      ${BIN_DIR}/chronicle-receiver --config-dir=${BIN_DIR}/config --data-dir=${BIN_DIR}/data --end-block=400000000 2>&1 | tee -a ${BIN_DIR}/log/chronicle.log &
+   fi
+fi
