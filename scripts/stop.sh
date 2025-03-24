@@ -52,6 +52,7 @@ while [ $COUNTER -lt 100 ]; do
       ps -ef | grep -v grep | grep relicdb | grep -q idle && kill -INT $PID
    else
       echo "stopped!"
+      break
    fi
 done
 
