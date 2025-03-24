@@ -63,7 +63,6 @@ if [[ -n $PID ]]; then
    pause
    kill -INT $PID
 fi
-echo
 
 sleep 1
 PID=$(pgrep chronicle)
