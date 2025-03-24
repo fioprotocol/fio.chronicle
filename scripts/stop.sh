@@ -50,9 +50,9 @@ while [ $COUNTER -lt 100 ]; do
    PID=$(pgrep chronicle)
    if [[ -n $PID ]]; then
       ps -ef | grep -v grep | grep relicdb | grep -q idle && kill -INT $PID
-      continue
+   else
+      echo "stopped!"
    fi
-   echo " stopped!"
 done
 
 # Check if really down...
