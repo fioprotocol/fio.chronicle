@@ -21,7 +21,6 @@ function usage() {
 DEBUG=${DEBUG:-false}
 IMPORT=${IMPORT:-false}
 EXPORT=${EXPORT:-false}
-DEFAULT_SNAPSHOT_DIR=/opt/fio-chronicle/bkups
 if [ $# -ne 0 ]; then
    while getopts "eis:xh" opt; do
       case "${opt}" in
@@ -32,7 +31,7 @@ if [ $# -ne 0 ]; then
          IMPORT=true
          ;;
       s)
-         SNAPSHOT_DIR=${OPTARG}
+         SNAPSHOT=${OPTARG}
          ;;
       x)
          DEBUG=true
@@ -58,23 +57,42 @@ fi
 
 INSTALL_DIR=${INSTALL_DIR:-/opt/fio-chronicle}
 if [[ ! -e ${INSTALL_DIR}/chronicle-receiver ]]; then
-   echo && echo "ERROR: ${INSTALL_DIR}/chronicle-receiver not found! Use '-i' to specify the FIO.Chronicle binary directory."
+   echo && echo "ERROR: ${INSTALL_DIR}/chronicle-receiver not found!"
    usage
-   exit 1
 fi
 
-if ! (${EXPORT} || ${IMPORT}); then
+if ! ( ${EXPORT} || ${IMPORT} ); then
    echo && echo "ERROR: Either export or import must be specified!"
    usage
 
 fi
-if ${EXPORT} || ${IMPORT}; then
-   if [[ -z ${SNAPSHOT_DIR} || ! -d ${SNAPSHOT_DIR} ]]; then
-   echo && echo "WARNING: A valid snapshot directory was not specified ('-s'). Using default directory: ${DEFAULT_SNAPSHOT_DIR}"
-   pause
-   SNAPSHOT_DIR=${DEFAULT_SNAPSHOT_DIR}
+
+if ${IMPORT} && [[ -z $SNAPSHOT ]]; then
+   echo && echo "ERROR: Import requires a snapshot is specified!"
+   usage
 fi
+
+if [[ -n ${SNAPSHOT} ]]; then
+   if [[ -d ${SNAPSHOT} ]]; then
+      SNAPSHOT=${SNAPSHOT}/fc-snapshot_`date +%Y-%m-%dT%H%M%S`.tar.gz
+   fi
+   echo
+   if ! yes_or_no "   Snapshot File: ${SNAPSHOT}"; then
+      usage
+   fi
+fi
+SNAPSHOT=${SNAPSHOT:-${INSTALL_DIR}/bkups/fc-snapshot_`date +%Y-%m-%dT%H%M%S`.tar.gz}
+
+SNAPSHOT_DIR=${SNAPSHOT%/*}
 makedir ${SNAPSHOT_DIR}
+if $EXPORT && [[ ! -w ${SNAPSHOT_DIR} ]]; then
+   echo && echo "Unable to write snapshot to ${SNAPSHOT_DIR}!"
+   usage
+fi
+if $IMPORT && [[ ! -r ${SNAPSHOT} ]]; then
+   echo && echo "Unable to read snapshot from ${SNAPSHOT}!"
+   usage
+fi
 
 PID=$(pgrep chronicle)
 if [[ -n $PID ]]; then
@@ -84,15 +102,15 @@ if [[ -n $PID ]]; then
 fi
 
 if $EXPORT; then
-   echo && echo "Saving FIO.Chronicle snapshot..." && echo
+   echo && echo "Exporting FIO.Chronicle snapshot..." && echo
    # EOS Chronicle
    #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkups/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
-   tar -czf ${SNAPSHOT_DIR}/fc-snapshot_`date +%Y-%m-%dT%H%M%S`.tar.gz ${DATA_DIR}/receiver-state
+   tar -czf ${SNAPSHOT} -C ${INSTALL_DIR}/data/receiver-state lock.bin shared_memory.bin
 fi
 
 if $IMPORT; then
-   echo && echo "Loading FIO.Chronicle snapshot..." && echo
+   echo && echo "Importing FIO.Chronicle snapshot..." && echo
    # EOS Chronicle
    #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkups/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
-   tar -xzf ${SNAPSHOT_DIR}/fc-snapshot_`date +%Y-%m-%dT%H%M%S`.tar.gz -C ${BIN_DIR}/data/receiver-state
+   tar -xzf ${SNAPSHOT} -C ${INSTALL_DIR}/data/receiver-state
 fi
