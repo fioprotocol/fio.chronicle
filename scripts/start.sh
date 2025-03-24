@@ -12,7 +12,7 @@ function usage() {
   -b     FIO.Chronicle Binary Directory
   -d     FIO.Chronicle Data (State) Directory
   -r     Reset FIO.Chronicle state
-  -x     Turn debug on
+  -x     Run in debub mode
   -h     Display usage
    \\n" "$0" 1>&2
    exit 1
@@ -21,18 +21,12 @@ function usage() {
 DEBUG=${DEBUG:-false}
 RESET=${RESET:-false}
 if [ $# -ne 0 ]; then
-   while getopts "b:d:l:rxh" opt; do
+   while getopts "b:rxh" opt; do
       case "${opt}" in
       b)
          BIN_DIR=${OPTARG}
          ;;
-      d)
-         DATA_DIR=${OPTARG}
-         ;;
-      l)
-         LOG_DIR=${OPTARG}
-         ;;
-      r)
+     r)
          RESET=true
          ;;
       x)
@@ -57,37 +51,31 @@ if [ $# -ne 0 ]; then
    done
 fi
 
-# sudo cp ${BUILD_DIR}/chronicle-receiver /usr/local/sbin
-# sudo mkdir -p /srv/fio/chronicle-data && sudo mkdir -p /srv/fio/chronicle-config
+# Default install: /opt/fio-chronicle
+# /opt/fio-chronicle/chronicle-receiver
+# /opt/fio-chronicle/config/config.ini
+# /opt/fio-chronicle/data/receiver-state
+# /opt/fio-chronicle/log
 
-BIN_DIR=${BIN_DIR:-/opt/fio-chronicle}
-if [[ ! -z ${BIN_DIR} ]]; then
-   echo && echo "ERROR: ${BIN_DIR}/chronicle-receiver not found! Use '-b' to specify the FIO.Chronicle binary directory."
-   usage
-   exit 1
+# System install
+# /usr/local/sbin/chronicle-receiver
+# /srv/fio/chronicle-config
+# /srv/fio/chronicle-data
+# /var/log?
+
+if [[ -z ${BIN_DIR} ]]; then
+   BIN_DIR=/opt/fio-chronicle
+   if [[ -x /opt/fio-chronicle/chronicle-receiver && -x /usr/local/sbin/chronicle-receiver ]]; then
+      echo && echo "WARNING: FIO.Chronicle receiver found in /opt/fio-chronicle AND /usr/local/sbin!"
+      echo && echo "Re-execute script providing '-b' arg. Exiting..."
+      usage
+   fi
 fi
 
 if [[ -n ${BIN_DIR} && ! ( -d ${BIN_DIR} && -x ${BIN_DIR}/chronicle-receiver ) ]]; then
-   echo && echo "ERROR: FIO.Chronicle binary, ${BIN_DIR}/chronicle-receiver, not found!"
-   echo
-   exit 1
+   echo && echo "ERROR: FIO.Chronicle executable, ${BIN_DIR}/chronicle-receiver, invalid or not found!"
+   usage
 fi
-
-SYSTEMCTL_INUSE=false
-if [[ -x /usr/local/sbin/chronicle-receiver ]]; then
-   echo && echo "INFO: The FIO.Chronicle receiver appears to be installed as a service"
-   echo "      Proceeding will use systemctl to start FIO.Chronicle receiver..."
-   pause
-   BIN_DIR=/usr/local/sbin/chronicle-receiver
-   SYSTEMCTL_INUSE=true
-   if [[ $RESET ]]; then
-     echo && echo "WARNING: RESET is not possible when using systemctl; Reset state manually..."
-     pause
-   fi
-   RESET=false
-fi
-
-echo && echo "Starting Fio.Chronicle..."
 
 PID=$(pgrep chronicle)
 if [[ -n $PID ]]; then
@@ -96,21 +84,16 @@ if [[ -n $PID ]]; then
    exit 1
 fi
 
-if $RESET; then
-   echo && echo "Reset FIO.Chronicle state..." && echo
-   if yes_or_no "Proceed"; then
-      rm -f ${DATA_DIR}/lock.bin
-      rm -f ${DATA_DIR}/shared_memory.bin
-  fi
-fi
-
 # Start Chronicle
 echo && echo "Starting FIO.Chronicle..."
-if $SYSTEMCTL_INUSE; then
-   sudo systemctl start chronicle-receiver
-else
-   if [[ ${BIN_DIR}/log ]]; then
-      [[ -e ${BIN_DIR}/log/chronicle.log ]] && mv ${BIN_DIR}/log/chronicle.log ${BIN_DIR}/log/chronicle-`date +%Y-%m-%dT%H%M%S`.log
-      ${BIN_DIR}/chronicle-receiver --config-dir=${BIN_DIR}/config --data-dir=${BIN_DIR}/data --end-block=400000000 2>&1 | tee -a ${BIN_DIR}/log/chronicle.log &
+STARTED=false
+if [[ -x /usr/local/sbin/chronicle-receiver ]]; then
+   echo && echo "INFO: The FIO.Chronicle receiver appears to be installed as a service" & echo
+   if yes_or_no "Should systemctl be used to start FIO.Chronicle receiver"; then
+      sudo systemctl start chronicle-receiver
+      STARTED=true
    fi
+fi
+if ! ${STARTED}; then
+   ${BIN_DIR}/chronicle-receiver --config-dir=${BIN_DIR}/config --data-dir=${BIN_DIR}/data --end-block=400000000 2>&1 | tee -a ${BIN_DIR}/log/chronicle.log &
 fi
