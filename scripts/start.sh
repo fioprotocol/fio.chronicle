@@ -78,7 +78,7 @@ echo && echo "Starting Fio.Chronicle..."
 IS_SERVICE=false
 if [[ -z ${INSTALL_DIR} ]]; then
    if systemctl -q is-active chronicle-receiver; then
-      echo && echo "INFO: The FIO.Chronicle receiver appears to be installed as a service"
+      echo && echo "FIO.Chronicle receiver appears to be installed as a service"
       echo && echo "Using systemctl to start FIO.Chronicle receiver..."; then
       pause
       if [[ $RESET ]]; then
@@ -101,3 +101,5 @@ fi
 INSTALL_DIR=${INSTALL_DIR:-/opt/fio-chronicle}
 [[ -e ${INSTALL_DIR}/log/chronicle.log ]] && mv ${INSTALL_DIR}/log/chronicle.log ${INSTALL_DIR}/log/chronicle-`date +%Y-%m-%dT%H%M%S`.log
 ${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --end-block=400000000 2>&1 | tee -a ${INSTALL_DIR}/log/chronicle.log &
+
+echo && echo "Finished"
