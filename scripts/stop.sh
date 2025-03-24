@@ -68,3 +68,11 @@ if [[ -n $PID ]]; then
    kill -INT $PID
 fi
 echo
+
+sleep 1
+PID=$(pgrep chronicle)
+if [[ -n $PID ]]; then
+   echo && echo "ERROR: FIO.Chonicle not shut down!"
+else
+   echo && echo "INFO: FIO.Chronicle shut down"
+fi
