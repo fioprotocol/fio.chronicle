@@ -41,8 +41,6 @@ if [ $# -ne 0 ]; then
    done
 fi
 
-echo && echo "Stopping Fio.Chronicle..."
-  
 # Stop chronicle (note this depends on an idle postgres)
 echo && echo "Stopping FIO.Chronicle gracefully..."
 COUNTER=0
@@ -50,11 +48,6 @@ while [ $COUNTER -lt 100 ]; do
    COUNTER=$(($COUNTER+1))
 
    PID=$(pgrep chronicle)
-   if [[ -z $PID ]]; then
-      echo && echo "FIO.Chronicle is stopped."
-      break
-   fi
-
    if [[ -n $PID ]]; then
       ps -ef | grep -v grep | grep relicdb | grep -q idle && kill -INT $PID && echo && echo " Stopped!"
    fi
