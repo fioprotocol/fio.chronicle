@@ -9,8 +9,7 @@ cd $( dirname "${BASH_SOURCE[0]}" )/..
 
 function usage() {
    printf "\\nUsage: $0 OPTION...
-  -b     FIO.Chronicle Binary Directory
-  -d     FIO.Chronicle Data (State) Directory
+  -i     FIO.Chronicle Install Directory
   -r     Reset FIO.Chronicle state
   -x     Run in debub mode
   -h     Display usage
@@ -21,12 +20,12 @@ function usage() {
 DEBUG=${DEBUG:-false}
 RESET=${RESET:-false}
 if [ $# -ne 0 ]; then
-   while getopts "b:rxh" opt; do
+   while getopts "i:rxh" opt; do
       case "${opt}" in
-      b)
-         BIN_DIR=${OPTARG}
+      i)
+         INSTALL_DIR=${OPTARG}
          ;;
-     r)
+      r)
          RESET=true
          ;;
       x)
@@ -63,17 +62,8 @@ fi
 # /srv/fio/chronicle-data
 # /var/log?
 
-if [[ -z ${BIN_DIR} ]]; then
-   BIN_DIR=/opt/fio-chronicle
-   if [[ -x /opt/fio-chronicle/chronicle-receiver && -x /usr/local/sbin/chronicle-receiver ]]; then
-      echo && echo "WARNING: FIO.Chronicle receiver found in /opt/fio-chronicle AND /usr/local/sbin!"
-      echo && echo "Re-execute script providing '-b' arg. Exiting..."
-      usage
-   fi
-fi
-
-if [[ -n ${BIN_DIR} && ! ( -d ${BIN_DIR} && -x ${BIN_DIR}/chronicle-receiver ) ]]; then
-   echo && echo "ERROR: FIO.Chronicle executable, ${BIN_DIR}/chronicle-receiver, invalid or not found!"
+if [[ -n ${INSTALL_DIR} && ! ( -d ${INSTALL_DIR} && -x ${INSTALL_DIR}/chronicle-receiver ) ]]; then
+   echo && echo "ERROR: FIO.Chronicle executable, ${INSTALL_DIR}/chronicle-receiver, invalid or not found!"
    usage
 fi
 
@@ -84,16 +74,30 @@ if [[ -n $PID ]]; then
    exit 1
 fi
 
-# Start Chronicle
-echo && echo "Starting FIO.Chronicle..."
-STARTED=false
-if [[ -x /usr/local/sbin/chronicle-receiver ]]; then
-   echo && echo "INFO: The FIO.Chronicle receiver appears to be installed as a service" & echo
-   if yes_or_no "Should systemctl be used to start FIO.Chronicle receiver"; then
+echo && echo "Starting Fio.Chronicle..."
+IS_SERVICE=false
+if [[ -z ${INSTALL_DIR} ]]; then
+   if systemctl -q is-active chronicle-receiver; then
+      echo && echo "INFO: The FIO.Chronicle receiver appears to be installed as a service"
+      echo && echo "Using systemctl to start FIO.Chronicle receiver..."; then
+      pause
+      if [[ $RESET ]]; then
+         echo && echo "WARNING: RESET is not possible when using systemctl; State must be reset manually..."
+         pause
+      fi
       sudo systemctl start chronicle-receiver
-      STARTED=true
+      exit 0
    fi
 fi
-if ! ${STARTED}; then
-   ${BIN_DIR}/chronicle-receiver --config-dir=${BIN_DIR}/config --data-dir=${BIN_DIR}/data --end-block=400000000 2>&1 | tee -a ${BIN_DIR}/log/chronicle.log &
+
+if $RESET; then
+   echo && echo "Reset FIO.Chronicle state..." && echo
+   if yes_or_no "Proceed"; then
+      rm -f ${DATA_DIR}/lock.bin
+      rm -f ${DATA_DIR}/shared_memory.bin
+  fi
 fi
+
+INSTALL_DIR=${INSTALL_DIR:-/opt/fio-chronicle}
+[[ -e ${INSTALL_DIR}/log/chronicle.log ]] && mv ${INSTALL_DIR}/log/chronicle.log ${INSTALL_DIR}/log/chronicle-`date +%Y-%m-%dT%H%M%S`.log
+${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --end-block=400000000 2>&1 | tee -a ${INSTALL_DIR}/log/chronicle.log &
