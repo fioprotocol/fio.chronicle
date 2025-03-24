@@ -79,7 +79,7 @@ IS_SERVICE=false
 if [[ -z ${INSTALL_DIR} ]]; then
    if systemctl -q is-active chronicle-receiver; then
       echo && echo "FIO.Chronicle receiver appears to be installed as a service"
-      echo && echo "Using systemctl to start FIO.Chronicle receiver..."; then
+      echo && echo "Using systemctl to start FIO.Chronicle receiver..."
       pause
       if [[ $RESET ]]; then
          echo && echo "WARNING: RESET is not possible when using systemctl; State must be reset manually..."
