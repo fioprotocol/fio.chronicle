@@ -74,6 +74,8 @@ sudo apt update
 sudo apt -y install postgresql-16
 ```
 
+See the [FIO.Relic Readme](https://github.com/fioprotocol/fio.relic/blob/develop/README.md) for specific instructions to stand up the FIO.Relic database.
+
 #### Build
 The build script takes one argument, the directory where to find or install the build dependencies including Boost, Clang, and LLVM. It is recommended to use a non-system level directory such as '/opt'. Note that any future builds, if given the same directory, will reuse those build dependencies.
 
@@ -132,10 +134,42 @@ These options will allow FIO.Chronicle to connect to a FIO State History node at
 #### Starting the application
 In the following command both a start and an end block number is specified to limit block processing. Note that the start block will default to 1 so only an end block is neccessary. As the `--end-block` parameter is required, specify a very large number to process blocks for the foreseeable future.
 
-Start the fio-chronicle-receiver
+To start the fio-chronicle-receiver, execute the command;
 ```shell
 /opt/fio-chronicle/chronicle-receiver --config-dir=/opt/fio-chronicle/config --data-dir=/opt/fio-chronicle/data --start-block=1 --end-block=10000
 ```
+
+**WARNING**: An exporter plugin as well as the application supporting that exporter should be in place before executing the command above. See the [FIO.Relic Readme](https://github.com/fioprotocol/fio.relic/blob/develop/README.md) for specific instructions to stand up the FIO.Relic database or the addendum below to set up a web socket server.
+
+
+#### Data Capture: Export and Import
+To periodically take a snapshot of the FIO.Chronicle state, primarily for stand-up of another server or fallback to a previous state, the _snapshot.sh_ script is provided. This script provides functionality to both export and import state. Note that this state should coincide with the state resident in the FIO.Relic database.
+
+To export the FIO.Chronicle state execute the script, _snapshot.sh_, passing the argument '-e' (for export). In addition, providing the '-s' argument will export data to a specific directory or file. In the case that a directory is provided, a default file name will be created in the form 'fc-snapshot-<Current Date and Time>.tar.gz'. Following are three examples for exporting data;
+
+```shell
+sudo ./scripts/snapshot.sh -e
+```
+The snapshot file, _/opt/fio-chronicle/bkup/fc-snapshot-2025-03-16T132648.tar.gz_, will be created in the **/opt/fio-chronicle/bkup** directory containing the FIO.Chronicle Relic DB Exporter state at March 16, 2025, 1:26:48 pm. Note that _/opt/fio-chronicle_ is the default installation direction for FIO.Chronicle.
+
+Other examples include;
+```shell
+sudo ./scripts/snapshot.sh -e -s /tmp
+```
+The snapshot file, _/tmp/fc-snapshot-2025-03-16T132648.tar.gz_, will be created in the **/tmp** directory containing the FIO.Chronicle Relic DB Exporter state at March 16, 2025, 1:26:48 pm.
+
+```shell
+sudo ./scripts/snapshot.sh -e -s /tmp/relicdb_snapshot
+```
+The snapshot file, _/tmp/relicdb_snapshot_, will be created containing the FIO.Chronicle Relic DB Exporter state at March 16, 2025, 1:26:48 pm. Note that the file format is a tar gzip file regardless of the extention provided.
+
+To import the FIO.Relic database schema including tables, functions, users and data execute the script, _snapshot.sh_, passing the argument '-i' (for import), and the '-s' argument specifying the snapshot file. For example, to import the data previously exported to the file _/tmp/relicdb_snapshot_, execute the command; 
+```shell
+sudo ./scripts/snapshot.sh -i -s /tmp/relicdb_snapshot
+```
+
+Note: ***The snapshot file is a complete export of the FIO.Relic database. Executing the import script will clear any and all data as well as tables, functions and users!***
+
 
 ### Addendum
 For the purposes of confirming end-to-end connectivity refer to the configuration as well as the documents below to start a local FIO state history node as well as a local web socket server

@@ -9,7 +9,7 @@ cd $( dirname "${BASH_SOURCE[0]}" )/..
 
 function usage() {
    printf "\\nUsage: $0 OPTION...
-  -x     Run in debub mode
+  -x     Run in debug mode
   -h     Display usage
    \\n" "$0" 1>&2
    exit 1

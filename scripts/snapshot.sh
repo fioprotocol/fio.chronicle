@@ -11,8 +11,8 @@ function usage() {
    printf "\\nUsage: $0 OPTION...
   -e     Export FIO.Chronicle State
   -i     Import FIO.Chronicle State
-  -s     FIO.Chronicle Snapshot Directory
-  -x     Run in debub mode
+  -s     FIO.Chronicle Snapshot Directory/File
+  -x     Run in debug mode
   -h     Display usage
    \\n" "$0" 1>&2
    exit 1
@@ -26,9 +26,11 @@ if [ $# -ne 0 ]; then
       case "${opt}" in
       e)
          EXPORT=true
+         ACTION="Export"
          ;;
       i)
          IMPORT=true
+         ACTION="Import"
          ;;
       s)
          SNAPSHOT=${OPTARG}
@@ -76,12 +78,12 @@ if [[ -n ${SNAPSHOT} ]]; then
    if [[ -d ${SNAPSHOT} ]]; then
       SNAPSHOT=${SNAPSHOT}/fc-snapshot_`date +%Y-%m-%dT%H%M%S`.tar.gz
    fi
-   echo
-   if ! yes_or_no "   Snapshot File: ${SNAPSHOT}"; then
-      usage
-   fi
 fi
-SNAPSHOT=${SNAPSHOT:-${INSTALL_DIR}/bkups/fc-snapshot_`date +%Y-%m-%dT%H%M%S`.tar.gz}
+SNAPSHOT=${SNAPSHOT:-${INSTALL_DIR}/bkup/fc-snapshot_`date +%Y-%m-%dT%H%M%S`.tar.gz}
+echo
+if ! yes_or_no "Confirm: $ACTION data to: ${SNAPSHOT}"; then
+   usage
+fi
 
 SNAPSHOT_DIR=${SNAPSHOT%/*}
 makedir ${SNAPSHOT_DIR}
@@ -104,13 +106,13 @@ fi
 if $EXPORT; then
    echo && echo "Exporting FIO.Chronicle snapshot..." && echo
    # EOS Chronicle
-   #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkups/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
+   #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkup/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
    tar -czf ${SNAPSHOT} -C ${INSTALL_DIR}/data/receiver-state lock.bin shared_memory.bin
 fi
 
 if $IMPORT; then
    echo && echo "Importing FIO.Chronicle snapshot..." && echo
    # EOS Chronicle
-   #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkups/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
+   #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkup/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
    tar -xzf ${SNAPSHOT} -C ${INSTALL_DIR}/data/receiver-state
 fi
