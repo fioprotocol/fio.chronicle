@@ -11,7 +11,7 @@ function usage() {
    printf "\\nUsage: $0 OPTION...
   -i     FIO.Chronicle Install Directory
   -r     Reset FIO.Chronicle state
-  -x     Run in debub mode
+  -x     Run in debug mode
   -h     Display usage
    \\n" "$0" 1>&2
    exit 1
