@@ -40,14 +40,26 @@ if [ $# -ne 0 ]; then
    done
 fi
 
-echo && echo "Installing Fio.Chronicle..."
-
 # Get Scripts dir and ensure we're in the repo root and not inside of scripts
 SCRIPTS_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
 cd $( dirname "${BASH_SOURCE[0]}" )/..
 
 # Load utility functions
 . ${SCRIPTS_DIR}/utils.sh
+
+if [[ "$EUID" -eq 0 ]]; then
+  echo && echo "ERROR: Script should not be run as root! Exiting..."
+  echo
+  exit 1
+fi
+
+groups $(id -un) | grep sudo >/dev/null
+if [[ $? -ne 0 ]]; then
+  echo
+  echo "ERROR: User $(id -un) does NOT have sudo privilege! sudo privilege is required to run this script. Exiting..."
+  echo
+  exit 1
+fi
 
 if [[ "$(uname)" == "Linux" ]]; then
   if [[ -e /etc/os-release ]]; then
@@ -66,13 +78,7 @@ else
   pause
 fi
 
-groups $(id -un) | grep sudo >/dev/null
-if [[ $? -ne 0 ]]; then
-  echo
-  echo "ERROR: User $(id -un) does NOT have sudo privilege! sudo privilege is required to run this script. Exiting..."
-  echo
-  exit 1
-fi
+echo && echo "Installing Fio.Chronicle..."
 
 PROJECT_DIR=$(pwd)
 BUILD_DIR=${PROJECT_DIR}/build
@@ -90,6 +96,7 @@ if ! $SYSTEM_INSTALL; then
   makedir /opt/fio-chronicle
   makedir /opt/fio-chronicle/config
   makedir /opt/fio-chronicle/data
+  makedir /opt/fio-chronicle/log
 
   cp ${BUILD_DIR}/chronicle-receiver /opt/fio-chronicle
 

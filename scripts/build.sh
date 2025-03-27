@@ -3,8 +3,6 @@
 # Debug
 #set -x
 
-echo && echo "Building Fio.Chronicle..."
-
 # Get Scripts dir and ensure we're in the repo root and not inside of scripts
 SCRIPTS_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
 cd $( dirname "${BASH_SOURCE[0]}" )/..
@@ -58,6 +56,8 @@ if [[ $? -ne 0 ]]; then
 fi
 
 DEPS_DIR=$1
+
+echo && echo "Building Fio.Chronicle..."
 
 ARCH=`uname -m`
 JOBS=$(nproc)

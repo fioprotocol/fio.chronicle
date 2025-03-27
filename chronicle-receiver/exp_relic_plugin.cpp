@@ -391,7 +391,6 @@ public:
                     
                       string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["kvo"]["value"]["name"],ALLOW_EMPTY_VALUES);
                       string expiration = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)object["kvo"]["value"]["expiration"],ALLOW_EMPTY_VALUES);
-                      string bundlecount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["kvo"]["value"]["bundleeligiblecountdown"],ALLOW_EMPTY_VALUES);
                       string handlebnum = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)object["block_num"],ALLOW_EMPTY_VALUES);
 
                     //if this handle is burnaddress then skip it
@@ -580,7 +579,7 @@ public:
                        actionaccount+"','"+
                         actionname+"','"+
                         tpid+"',"+
-                        feeamount+",E"+ 
+                        feeamount+","+ 
                         requestdata+",'"+
                         response+"','"+
                         status+"');";
@@ -680,7 +679,7 @@ public:
                   }else { //insert the acount info for the pub key used, do not mod if exists.
                     string insertQuery = "SELECT insupdaccounts("+
                       bnums+",'"+
-                      owneracct+"',E"+
+                      owneracct+"',"+
                       pubkey+",'"+
                       blocktimestamp +"','false');";
                       
@@ -730,7 +729,6 @@ public:
 
                 if(actionname == "regdomadd") { 
                   string encryptkeyisset = "false";
-                  string bundledtxcount = "100";
                   string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
                   string HANDLESTATUSACTIVE = "active";
                   string chaincode = "FIO";
@@ -740,10 +738,9 @@ public:
                       bnums+",'"+
                       domainname +"','" +
                       owneracct +"','" +
-                      handle +"',E" +
+                      handle +"'," +
                       pubkey +",'" +
-                      encryptkeyisset +"'," +
-                      bundledtxcount +",'" +
+                      encryptkeyisset +"','" +
                       expirationtimestamp +"','" +
                       HANDLESTATUSACTIVE +"');";
                       
@@ -774,7 +771,7 @@ public:
                       bnums+",'"+
                       handle+"','"+
                        chaincode+"','"+
-                        tokencode+"',E"+
+                        tokencode+"',"+
                          pubkey+");";
                       
                   res = PQexec(conn, insertQuery.c_str());
@@ -869,7 +866,7 @@ public:
                   }else { //insert the acount info for the pub key used, do not mod if exists.
                     string insertQuery = "SELECT insupdaccounts("+
                       bnums+",'"+
-                      owneracct+"',E"+
+                      owneracct+"',"+
                       pubkey+",'"+
                       blocktimestamp +"','false');";
                       
@@ -1195,7 +1192,7 @@ public:
                       bnums+","+
                       fiochainrequestid+",'"+
                       payerhandle+"','"+
-                      payeehandle+"',E"+
+                      payeehandle+"',"+
                       content+",'"+
                       REQUESTSTATUSPENDING+"','"+
                        blocktimestamp+"');";
@@ -1249,7 +1246,7 @@ public:
                       bnums+","+
                       fiochainrequestid+",'"+
                       payerhandle+"','"+
-                      payeehandle+"',E"+
+                      payeehandle+"',"+
                       content+",'"+
                       REQUESTSTATUSSENTTOBC+"','"+
                        blocktimestamp+"');";
@@ -1318,7 +1315,6 @@ public:
                   string pubkey = escapesqlstring(pubkeyt,conn);
 
                   string encryptkeyisset = "false";
-                  string bundledtxcount = "100";
                   string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
                   string HANDLESTATUSACTIVE = "active";
                   string chaincode = "FIO";
@@ -1354,7 +1350,7 @@ public:
                   }else { //insert the acount info for the pub key used, do not mod if exists.
                     string insertQuery = "SELECT insupdaccounts("+
                       bnums+",'"+
-                      owneracct+"',E"+
+                      owneracct+"',"+
                       pubkey+",'"+
                       blocktimestamp +"','false');";
                       
@@ -1369,10 +1365,9 @@ public:
                       bnums+",'"+
                       domain +"','" +
                       owneracct +"','" +
-                      handle +"',E" +
+                      handle +"'," +
                       pubkey +",'" +
-                      encryptkeyisset +"'," +
-                      bundledtxcount +",'" +
+                      encryptkeyisset +"','" +
                       expirationtimestamp +"','" +
                       HANDLESTATUSACTIVE +"');";
                       
@@ -1419,7 +1414,7 @@ public:
                       bnums+",'"+
                       handle+"','"+
                        chaincode+"','"+
-                        tokencode+"',E"+
+                        tokencode+"',"+
                          pubkey+");";
                       
                   res = PQexec(conn, insertQuery.c_str());
@@ -1437,28 +1432,17 @@ public:
                   string HANDLEACTIVITYRENEW = "renew";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
-                  string insertQuery = "SELECT updhandlesrenewbundles("+
-                       bnums+",'"+
-                      handle +"','" +
-                      expirationtimestamp +"');";
-                      
-                  PGresult *res = PQexec(conn, insertQuery.c_str());
-                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                   terminalerror("renewaddr",insertQuery,conn,res);
-                    return;
-                  }
-                  PQclear(res);
 
                   string HANDLEACTIVITYTYPEREGISTER = "register";
                   
-                  insertQuery = "SELECT inshandleactivities("+
+                  string insertQuery = "SELECT inshandleactivities("+
                   boost::lexical_cast<std::string>(fktransactionid)+","+
                       bnums+",'"+
                       handle+"','"+
                       HANDLEACTIVITYRENEW+"','"+
                       blocktimestamp+"');";
                       
-                  res = PQexec(conn, insertQuery.c_str());
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
                    terminalerror("renewaddrhandleact",insertQuery,conn,res);
                     return;
@@ -1473,26 +1457,15 @@ public:
                   string HANDLEACTIVITYADDBUNDLES = "add_bundles";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
-                  string insertQuery = "SELECT updhandlesaddbundles("+
-                       bnums+",'"+
-                      handle +"'," +
-                      bundlesetss +");";
-                      
-                  PGresult *res = PQexec(conn, insertQuery.c_str());
-                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                   terminalerror("addbundles",insertQuery,conn,res);
-                    return;
-                  }
-                  PQclear(res);
                   
-                  insertQuery = "SELECT inshandleactivities("+
+                  string insertQuery = "SELECT inshandleactivities("+
                   boost::lexical_cast<std::string>(fktransactionid)+","+
                       bnums+",'"+
                       handle+"','"+
                       HANDLEACTIVITYADDBUNDLES+"','"+
                       blocktimestamp+"');";
                       
-                  res = PQexec(conn, insertQuery.c_str());
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
                    terminalerror("addbundleshandleact",insertQuery,conn,res);
                     return;
@@ -1548,11 +1521,11 @@ public:
                         insertQuery = "SELECT insupdnftsignatures("+
                           bnums+",'"+
                           handle+"','"+
-                          chaincode+"',E"+
-                          contractaddress+",E"+
-                            tokenid+",E"+
-                            url+",E"+
-                            hash+",E"+
+                          chaincode+"',"+
+                          contractaddress+","+
+                            tokenid+","+
+                            url+","+
+                            hash+","+
                             metadata+");";
                           
                       res = PQexec(conn, insertQuery.c_str());
@@ -1702,7 +1675,7 @@ public:
                   }else { //insert the acount info for the pub key used, do not mod if exists.
                     string insertQuery = "SELECT insupdaccounts("+
                       bnums+",'"+
-                      owneracct+"',E"+
+                      owneracct+"',"+
                       pubkey+",'"+
                       blocktimestamp +"','false');";
                       
@@ -1722,7 +1695,7 @@ public:
                   string insertQuery = "SELECT updhandlesxferowner("+
                        bnums+",'"+
                       handle +"','" +
-                       owneracct +"',E" +
+                       owneracct +"'," +
                         pubkey +",'" +
                          encryptkeyisset +"');";
                       
@@ -1776,7 +1749,7 @@ public:
                       bnums+",'"+
                       handle+"','"+
                        chaincode+"','"+
-                        tokencode+"',E"+
+                        tokencode+"',"+
                          pubkey+");";
                       
                   res = PQexec(conn, insertQuery.c_str());
@@ -1867,7 +1840,7 @@ public:
                           bnums+",'"+
                           handle+"','"+
                           chaincode+"','"+
-                            tokencode+"',E"+
+                            tokencode+"',"+
                             pubaddress+");";
                           
                       res = PQexec(conn, insertQuery.c_str());
@@ -1880,7 +1853,7 @@ public:
                       if (chaincode == "FIO" && (tokencode == "FIO" || tokencode == "*")){
                           insertQuery = "SELECT updhandlesencryptkey("+
                            bnums+",'"+
-                          handle +"',E" +
+                          handle +"'," +
                           pubaddress +");";
                           
                         res = PQexec(conn, insertQuery.c_str());
@@ -2025,7 +1998,7 @@ public:
                       payeracct+"','"+
                       payeeacct+"',"+
                       sufamount+",'"+
-                      TRNSTYPERETIRE +"',E"+
+                      TRNSTYPERETIRE +"',"+
                       memo+",'"+
                       blocktimestamp+"');";
                        
@@ -2047,7 +2020,7 @@ public:
                     actionaccount+"','"+
                     receiveraccount+"',"+
                     actionordinal+",'"+
-                    actionname+"',E"+
+                    actionname+"',"+
                     requestdata+",'"+
                     blocktimestamp+"');";
                 
@@ -2120,7 +2093,7 @@ public:
                       payeracct+"','"+
                       payeeacct+"',"+
                       sufamount+",'"+
-                      trnstype +"',E"+
+                      trnstype +"',"+
                       memo+",'"+
                       blocktimestamp+"');";
                       
@@ -2132,8 +2105,8 @@ public:
                   PQclear(res);
                 } //end if action is transfer
                  else if ((actionname == "issue")&&(receiveraccount == "fio.token")){
-                  string payeracct = "eosio";               
-                  string payeeacct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["to"],DISALLOW_EMPTY_VALUES);
+                  string payeracct = "fio.token";               
+                  string payeeacct = "eosio";
                   string memo = getjsonsqlescapedstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["memo"],DISALLOW_EMPTY_VALUES,conn);
                   string TRNSTYPETOKENMINT = "token_mint";
                   string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["quantity"],DISALLOW_EMPTY_VALUES);
@@ -2149,7 +2122,7 @@ public:
                       payeracct+"','"+
                       payeeacct+"',"+
                       sufamount+",'"+
-                      TRNSTYPETOKENMINT +"',E"+
+                      TRNSTYPETOKENMINT +"',"+
                       memo+",'"+
                       blocktimestamp+"');";
                       
@@ -2166,7 +2139,7 @@ public:
                   string pubkey = escapesqlstring(pubkeyt,conn);
                   string insertQuery = "SELECT insupdaccounts("+
                       bnums+",'"+
-                      accountnm+"',E"+
+                      accountnm+"',"+
                       pubkey+",'"+
                       blocktimestamp +"','true');";
                       
