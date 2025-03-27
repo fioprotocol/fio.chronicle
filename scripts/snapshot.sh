@@ -81,7 +81,7 @@ if [[ -n ${SNAPSHOT} ]]; then
 fi
 SNAPSHOT=${SNAPSHOT:-${INSTALL_DIR}/bkup/fc-snapshot_`date +%Y-%m-%dT%H%M%S`.tar.gz}
 echo
-if ! yes_or_no "Confirm: $ACTION data to: ${SNAPSHOT}"; then
+if ! yes_or_no "$ACTION data to: ${SNAPSHOT}"; then
    usage
 fi
 
