@@ -11,6 +11,7 @@
 #include <queue>
 #include <boost/beast/websocket.hpp>
 #include <boost/beast/core.hpp>
+
 #include <stdexcept>
 #include <limits>
 #include <cstdint>
@@ -105,7 +106,9 @@ public:
 
     if (PQstatus(conn) != CONNECTION_OK) {
         ilog("failed to connect to relic database exp_relic_plugin will now terminate.");
-        PQfinish(conn);
+         if (PQstatus(conn) != CONNECTION_OK) {
+              PQfinish(conn);
+          }
         return;
     }
 
@@ -240,7 +243,6 @@ public:
   }
 
 
-
   void  terminalerror(
       string uniqueident,
       string querystr,
@@ -250,8 +252,10 @@ public:
       ilog("Error during -- ${s}",("s",querystr));
       ilog("Error result status -- ${r} ",("r",boost::lexical_cast<std::string>(PQresultStatus(results))));
       ilog("Error -- exp_relic_plugin execution will be terminated. "); 
-      PQclear(results);
-      PQfinish(dbconn);
+      if (PQstatus(conn) != CONNECTION_OK) {
+          PQclear(results);
+          PQfinish(conn);
+      }
       throw(new std::runtime_error("Unexpected error in exporter, receiver will shut down."));
   }
 
@@ -559,13 +563,15 @@ public:
                  if(actdata.IsObject()){
                   tpid = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["tpid"],ALLOW_EMPTY_VALUES);
                  }
-                 string requestdata = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata,ALLOW_EMPTY_VALUES);
+                 
+                 string requestdata = getjsonsqlescapedstring(UNKNOWN_STRING,(rapidjson::Value&)actdata,ALLOW_EMPTY_VALUES,conn);
                  string maxfee = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)firstauth["actor"],DISALLOW_EMPTY_VALUES);
-  
+                
   
                 if((icactordinal == 0)&&!(actionname == "onblock")&&!(actionname == "nonce")){
                 
                
+
                   string insertQuery = "SELECT instransactions("+
                       bnums+",'"+
                       blocktimestamp+"','"+
@@ -574,8 +580,8 @@ public:
                        actionaccount+"','"+
                         actionname+"','"+
                         tpid+"',"+
-                        feeamount+",'"+
-                        requestdata+"','"+
+                        feeamount+",E"+ 
+                        requestdata+",'"+
                         response+"','"+
                         status+"');";
                 
@@ -638,15 +644,16 @@ public:
                    }                           
                    string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                    
-                   string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["owner_fio_public_key"],ALLOW_EMPTY_VALUES);
-                  string owneracct = fioio::key_to_account(pubkey);
+                  string pubkeyt = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["owner_fio_public_key"],ALLOW_EMPTY_VALUES);
+                  string owneracct = fioio::key_to_account(pubkeyt);
+                  string pubkey = escapesqlstring(pubkeyt,conn);
                   string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
                   string ispublic = "false";
                   string domainstatus = "active";
 
 
-//do pub key processing and accounts
-                  if (pubkey == UNKNOWN_STRING){
+                   //do pub key processing and accounts
+                  if (pubkeyt == UNKNOWN_STRING){
                     //get the actor account info and use it
 
                       string accQuery = "SELECT * FROM getaccountpubkeyandid('"+
@@ -666,15 +673,15 @@ public:
                         return;
                       }
  
-                      pubkey = PQgetvalue(res, 0, 1);
+                      string pubkeyt = PQgetvalue(res, 0, 1);
+                      PQclear(res);
+                      pubkey = escapesqlstring(pubkeyt,conn);
                       owneracct = actoraccount;
- 
-                       PQclear(res);
                   }else { //insert the acount info for the pub key used, do not mod if exists.
                     string insertQuery = "SELECT insupdaccounts("+
                       bnums+",'"+
-                      owneracct+"','"+
-                      pubkey+"','"+
+                      owneracct+"',E"+
+                      pubkey+",'"+
                       blocktimestamp +"','false');";
                       
                     PGresult *res = PQexec(conn, insertQuery.c_str());
@@ -684,7 +691,7 @@ public:
                     }
                     PQclear(res);
                   }
-//end do pubkey and account
+                  //end do pubkey and account
 
 
 
@@ -721,22 +728,20 @@ public:
                   PQclear(res);
 
 
-                if(actionname == "regdomadd") {
-                   string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
-                  string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["owner_fio_public_key"],ALLOW_EMPTY_VALUES);
-                  string owneracct = fioio::key_to_account(pubkey);
+                if(actionname == "regdomadd") { 
                   string encryptkeyisset = "false";
                   string bundledtxcount = "100";
                   string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
                   string HANDLESTATUSACTIVE = "active";
                   string chaincode = "FIO";
                   string tokencode = "FIO";
+
                   string insertQuery = "SELECT insupdhandles("+
                       bnums+",'"+
                       domainname +"','" +
                       owneracct +"','" +
-                      handle +"','" +
-                      pubkey +"','" +
+                      handle +"',E" +
+                      pubkey +",'" +
                       encryptkeyisset +"'," +
                       bundledtxcount +",'" +
                       expirationtimestamp +"','" +
@@ -769,8 +774,8 @@ public:
                       bnums+",'"+
                       handle+"','"+
                        chaincode+"','"+
-                        tokencode+"','"+
-                         pubkey+"');";
+                        tokencode+"',E"+
+                         pubkey+");";
                       
                   res = PQexec(conn, insertQuery.c_str());
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -796,6 +801,7 @@ public:
                       }
                       PQclear(res);
                   } //end if actor is owner.
+
                 } //end if action is regdomain, regdomadd
                 else if ((actionname == "renewdomain")){
                   string domainname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_domain"],ALLOW_EMPTY_VALUES);                                
@@ -830,12 +836,13 @@ public:
                 } //end if action is renewdomain
                  else if ((actionname == "xferdomain")){
                   string domainname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_domain"],ALLOW_EMPTY_VALUES);                                
-                  string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["new_owner_fio_public_key"],ALLOW_EMPTY_VALUES);
-                  string owneracct = fioio::key_to_account(pubkey);
+                  string pubkeyt = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["new_owner_fio_public_key"],ALLOW_EMPTY_VALUES);
+                  string owneracct = fioio::key_to_account(pubkeyt);
+                  string pubkey = escapesqlstring(pubkeyt,conn);
                   string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                  
                  //do pub key processing and accounts
-                  if (pubkey == UNKNOWN_STRING){
+                  if (pubkeyt == UNKNOWN_STRING){
                     //get the actor account info and use it
 
                       string accQuery = "SELECT * FROM getaccountpubkeyandid('"+
@@ -855,15 +862,15 @@ public:
                         return;
                       }
  
-                      pubkey = PQgetvalue(res, 0, 1);
+                     // pubkey = PQgetvalue(res, 0, 1);
                       owneracct = actoraccount;
  
                        PQclear(res);
                   }else { //insert the acount info for the pub key used, do not mod if exists.
                     string insertQuery = "SELECT insupdaccounts("+
                       bnums+",'"+
-                      owneracct+"','"+
-                      pubkey+"','"+
+                      owneracct+"',E"+
+                      pubkey+",'"+
                       blocktimestamp +"','false');";
                       
                     PGresult *res = PQexec(conn, insertQuery.c_str());
@@ -1151,7 +1158,7 @@ public:
                    string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                   string payerhandle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payer_fio_address"],ALLOW_EMPTY_VALUES);  
                   string payeehandle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payee_fio_address"],ALLOW_EMPTY_VALUES);  
-                   string content = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["content"],ALLOW_EMPTY_VALUES);  
+                   string content = getjsonsqlescapedstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["content"],ALLOW_EMPTY_VALUES,conn);  
                   string REQUESTSTATUSPENDING = "pending";
                   string HANDLEACTIVITYTYNEWREQUEST = "new_request";
                   string fiochainrequestid = getjsonstring(UNKNOWN_NUMBER_NULL,(rapidjson::Value&)respdoc["fio_request_id"],ALLOW_EMPTY_VALUES);
@@ -1188,8 +1195,8 @@ public:
                       bnums+","+
                       fiochainrequestid+",'"+
                       payerhandle+"','"+
-                      payeehandle+"','"+
-                      content+"','"+
+                      payeehandle+"',E"+
+                      content+",'"+
                       REQUESTSTATUSPENDING+"','"+
                        blocktimestamp+"');";
                      
@@ -1206,7 +1213,7 @@ public:
                   string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                   string payerhandle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payer_fio_address"],ALLOW_EMPTY_VALUES);  
                   string payeehandle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["payee_fio_address"],ALLOW_EMPTY_VALUES);  
-                  string content = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["content"],ALLOW_EMPTY_VALUES);  
+                  string content = getjsonsqlescapedstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["content"],ALLOW_EMPTY_VALUES,conn);  
                   string REQUESTSTATUSSENTTOBC = "sent_to_blockchain";
                   string HANDLEACTIVITYTYRECORDOBT = "record_obt";
                   string fiochainrequestid = getjsonstring("NULL",(rapidjson::Value&)actdata["fio_request_id"],DISALLOW_EMPTY_VALUES);                                
@@ -1242,8 +1249,8 @@ public:
                       bnums+","+
                       fiochainrequestid+",'"+
                       payerhandle+"','"+
-                      payeehandle+"','"+
-                      content+"','"+
+                      payeehandle+"',E"+
+                      content+",'"+
                       REQUESTSTATUSSENTTOBC+"','"+
                        blocktimestamp+"');";
                      
@@ -1306,8 +1313,10 @@ public:
                    domain =  handle.substr(pos + 1); 
                   }
                   string actoraccount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
-                  string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["owner_fio_public_key"],ALLOW_EMPTY_VALUES);
-                  string owneracct = fioio::key_to_account(pubkey);
+                  string pubkeyt = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["owner_fio_public_key"],ALLOW_EMPTY_VALUES);
+                  string owneracct = fioio::key_to_account(pubkeyt);
+                  string pubkey = escapesqlstring(pubkeyt,conn);
+
                   string encryptkeyisset = "false";
                   string bundledtxcount = "100";
                   string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
@@ -1316,7 +1325,7 @@ public:
                   string tokencode = "FIO";
 
 
-                  if (pubkey == UNKNOWN_STRING){
+                  if (pubkeyt == UNKNOWN_STRING){
                     //get the actor account info and use it
 
                       string accQuery = "SELECT * FROM getaccountpubkeyandid('"+
@@ -1336,15 +1345,17 @@ public:
                         return;
                       }
  
-                      pubkey = PQgetvalue(res, 0, 1);
+                     string pubkeyt = PQgetvalue(res, 0, 1);
+                      PQclear(res);
+                     pubkey = escapesqlstring(pubkeyt,conn);
                       owneracct = actoraccount;
  
-                       PQclear(res);
+                      
                   }else { //insert the acount info for the pub key used, do not mod if exists.
                     string insertQuery = "SELECT insupdaccounts("+
                       bnums+",'"+
-                      owneracct+"','"+
-                      pubkey+"','"+
+                      owneracct+"',E"+
+                      pubkey+",'"+
                       blocktimestamp +"','false');";
                       
                     PGresult *res = PQexec(conn, insertQuery.c_str());
@@ -1353,14 +1364,13 @@ public:
                       return;
                     }
                     PQclear(res);
-                  }
-                  
+                  }   
                   string insertQuery = "SELECT insupdhandles("+
                       bnums+",'"+
                       domain +"','" +
                       owneracct +"','" +
-                      handle +"','" +
-                      pubkey +"','" +
+                      handle +"',E" +
+                      pubkey +",'" +
                       encryptkeyisset +"'," +
                       bundledtxcount +",'" +
                       expirationtimestamp +"','" +
@@ -1409,8 +1419,8 @@ public:
                       bnums+",'"+
                       handle+"','"+
                        chaincode+"','"+
-                        tokencode+"','"+
-                         pubkey+"');";
+                        tokencode+"',E"+
+                         pubkey+");";
                       
                   res = PQexec(conn, insertQuery.c_str());
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -1418,6 +1428,8 @@ public:
                     return;
                   }
                   PQclear(res);
+
+                  
                 } //end if action is regaddress
                 else if ((actionname == "renewaddress")){
                   string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
@@ -1514,7 +1526,9 @@ public:
                   for (const auto& object : dvtrace.GetArray()) {
                       if (!object.IsObject()) {
                          std::cerr << "Error nfts: Element in array is not an object." << std::endl;
-                         PQfinish(conn); //TODO -- cleaner exit.
+                          if (PQstatus(conn) != CONNECTION_OK) {
+                             PQfinish(conn);
+                           }
                       }
                       const rapidjson::Value& nftdata = object;
 
@@ -1523,21 +1537,23 @@ public:
                       
                       string nftdatastr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata,ALLOW_EMPTY_VALUES);
                       string chaincode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["chain_code"],ALLOW_EMPTY_VALUES);                                
-                      string contractaddress = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["contract_address"],ALLOW_EMPTY_VALUES);                                
-                      string tokenid = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["token_id"],ALLOW_EMPTY_VALUES);                                
-                    string url = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["url"],ALLOW_EMPTY_VALUES);                                
-                    string hash = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["hash"],ALLOW_EMPTY_VALUES);                                
-                    string metadata = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["metadata"],ALLOW_EMPTY_VALUES);                                
+                     
+                      string contractaddress = getjsonsqlescapedstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["contract_address"],ALLOW_EMPTY_VALUES,conn);                                
+                      string tokenid = getjsonsqlescapedstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["token_id"],ALLOW_EMPTY_VALUES,conn);                                
+                    string url = getjsonsqlescapedstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["url"],ALLOW_EMPTY_VALUES,conn);                                
+                    string hash = getjsonsqlescapedstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["hash"],ALLOW_EMPTY_VALUES,conn);                                
+                    string metadata = getjsonsqlescapedstring(UNKNOWN_STRING,(rapidjson::Value&)nftdata["metadata"],ALLOW_EMPTY_VALUES,conn);                                
  
+
                         insertQuery = "SELECT insupdnftsignatures("+
                           bnums+",'"+
                           handle+"','"+
-                          chaincode+"','"+
-                          contractaddress+"','"+
-                            tokenid+"','"+
-                            url+"','"+
-                            hash+"','"+
-                            metadata+"');";
+                          chaincode+"',E"+
+                          contractaddress+",E"+
+                            tokenid+",E"+
+                            url+",E"+
+                            hash+",E"+
+                            metadata+");";
                           
                       res = PQexec(conn, insertQuery.c_str());
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -1549,7 +1565,10 @@ public:
                       
                     }else {
                       ilog ("FATAL error -- nfts parse error!!!");
-                      PQfinish(conn);
+                      if (PQstatus(conn) != CONNECTION_OK) {
+                        PQfinish(conn);
+                        abort_receiver();
+                      }
                     }
                   } //end loop over nfts.
                 } //end if action is addnft
@@ -1574,7 +1593,10 @@ public:
                   for (const auto& object : dvtrace.GetArray()) {
                       if (!object.IsObject()) {
                          std::cerr << "Error remnft: Element in array is not an object." << std::endl;
-                         PQfinish(conn); //TODO -- cleaner exit.
+                        if (PQstatus(conn) != CONNECTION_OK) {
+                            PQfinish(conn);
+                            abort_receiver();
+                        }
                       }
                       const rapidjson::Value& nftdata = object;
 
@@ -1602,7 +1624,10 @@ public:
                       
                     }else {
                       ilog ("fatal error remnft-- nfts parse error!!!");
-                      PQfinish(conn);
+                       if (PQstatus(conn) != CONNECTION_OK) {
+                        PQfinish(conn);
+                        abort_receiver();
+                      }
                     }
                   } //end loop over nfts.
                 } //end if action is remnft
@@ -1637,8 +1662,9 @@ public:
                 } //end if action is remallnfts
                 else if ((actionname == "xferaddress")){
                   string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
-                  string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["new_owner_fio_public_key"],ALLOW_EMPTY_VALUES);
-                  string owneracct = fioio::key_to_account(pubkey);
+                  string pubkeyt = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["new_owner_fio_public_key"],ALLOW_EMPTY_VALUES);
+                  string owneracct = fioio::key_to_account(pubkeyt);
+                  string pubkey = escapesqlstring(pubkeyt,conn);
                   string encryptkeyisset = "false";
                   string HANDLEACTIVITYTRANSFER = "transfer";
                   string chaincode = "FIO";
@@ -1647,7 +1673,7 @@ public:
                 
 
 //do pub key processing and accounts
-                  if (pubkey == UNKNOWN_STRING){
+                  if (pubkeyt == UNKNOWN_STRING){
                     //get the actor account info and use it
 
                       string accQuery = "SELECT * FROM getaccountpubkeyandid('"+
@@ -1667,15 +1693,17 @@ public:
                         return;
                       }
  
-                      pubkey = PQgetvalue(res, 0, 1);
+                      string pubkeyt = PQgetvalue(res, 0, 1);
+                      PQclear(res);
+                      pubkey = escapesqlstring(pubkeyt,conn);
                       owneracct = actoraccount;
  
                        PQclear(res);
                   }else { //insert the acount info for the pub key used, do not mod if exists.
                     string insertQuery = "SELECT insupdaccounts("+
                       bnums+",'"+
-                      owneracct+"','"+
-                      pubkey+"','"+
+                      owneracct+"',E"+
+                      pubkey+",'"+
                       blocktimestamp +"','false');";
                       
                     PGresult *res = PQexec(conn, insertQuery.c_str());
@@ -1694,8 +1722,8 @@ public:
                   string insertQuery = "SELECT updhandlesxferowner("+
                        bnums+",'"+
                       handle +"','" +
-                       owneracct +"','" +
-                        pubkey +"','" +
+                       owneracct +"',E" +
+                        pubkey +",'" +
                          encryptkeyisset +"');";
                       
                   PGresult *res = PQexec(conn, insertQuery.c_str());
@@ -1748,8 +1776,8 @@ public:
                       bnums+",'"+
                       handle+"','"+
                        chaincode+"','"+
-                        tokencode+"','"+
-                         pubkey+"');";
+                        tokencode+"',E"+
+                         pubkey+");";
                       
                   res = PQexec(conn, insertQuery.c_str());
                   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -1806,7 +1834,10 @@ public:
                   for (const auto& object : dvtrace.GetArray()) {
                       if (!object.IsObject()) {
                          std::cerr << "Error addaddress: Element in array is not an object." << std::endl;
-                         PQfinish(conn); //TODO -- cleaner exit.
+                          if (PQstatus(conn) != CONNECTION_OK) {
+                            PQfinish(conn);
+                            abort_receiver();
+                          }
                       }
                       const rapidjson::Value& addressdata = object;
 
@@ -1816,7 +1847,7 @@ public:
                       string addressdatastr = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata,ALLOW_EMPTY_VALUES);
                       string chaincode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata["chain_code"],ALLOW_EMPTY_VALUES);                                
                       string tokencode = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata["token_code"],ALLOW_EMPTY_VALUES);                                
-                      string pubaddress = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata["public_address"],ALLOW_EMPTY_VALUES);                                
+                      string pubaddress = getjsonsqlescapedstring(UNKNOWN_STRING,(rapidjson::Value&)addressdata["public_address"],ALLOW_EMPTY_VALUES,conn);                                
                     
                       string insertQuery = "SELECT inshandleactivities("+
                       boost::lexical_cast<std::string>(fktransactionid)+","+
@@ -1836,8 +1867,8 @@ public:
                           bnums+",'"+
                           handle+"','"+
                           chaincode+"','"+
-                            tokencode+"','"+
-                            pubaddress+"');";
+                            tokencode+"',E"+
+                            pubaddress+");";
                           
                       res = PQexec(conn, insertQuery.c_str());
                       if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -1849,8 +1880,8 @@ public:
                       if (chaincode == "FIO" && (tokencode == "FIO" || tokencode == "*")){
                           insertQuery = "SELECT updhandlesencryptkey("+
                            bnums+",'"+
-                          handle +"','" +
-                          pubaddress +"');";
+                          handle +"',E" +
+                          pubaddress +");";
                           
                         res = PQexec(conn, insertQuery.c_str());
                         if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -1861,7 +1892,10 @@ public:
                       }
                     }else {
                       ilog ("fatal error -- pub addresses parse error!!!");
-                      PQfinish(conn);
+                       if (PQstatus(conn) != CONNECTION_OK) {
+                        PQfinish(conn);
+                        abort_receiver();
+                      }
                     }
                   } //end loop over pub addresses.
                     
@@ -1872,7 +1906,10 @@ public:
                   for (const auto& object : dvtrace.GetArray()) {
                       if (!object.IsObject()) {
                          std::cerr << "Error remaddress: Element in array is not an object." << std::endl;
-                         PQfinish(conn); //TODO -- cleaner exit.
+                          if (PQstatus(conn) != CONNECTION_OK) {
+                            PQfinish(conn);
+                            abort_receiver();
+                          }
                       }
                       const rapidjson::Value& addressdata = object;
 
@@ -1912,7 +1949,10 @@ public:
                       PQclear(res);
                     }else {
                       ilog ("fatal error--remaddress pub addresses parse error!!!");
-                      PQfinish(conn);
+                       if (PQstatus(conn) != CONNECTION_OK) {
+                        PQfinish(conn);
+                        abort_receiver();
+                      }
                     }
                   } //end loop over pub addresses.
                     
@@ -1977,7 +2017,7 @@ public:
                   string payeracct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                   string payeeacct = "fio.token";
                   string TRNSTYPERETIRE = "retire";
-                  string memo = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["memo"],ALLOW_EMPTY_VALUES);
+                  string memo = getjsonsqlescapedstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["memo"],ALLOW_EMPTY_VALUES,conn);
                   string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["quantity"],DISALLOW_EMPTY_VALUES);
                   string insertQuery = "SELECT instokentransfers("+
                        boost::lexical_cast<std::string>(fktransactionid)+","+
@@ -1985,8 +2025,8 @@ public:
                       payeracct+"','"+
                       payeeacct+"',"+
                       sufamount+",'"+
-                      TRNSTYPERETIRE +"','"+
-                      memo+"','"+
+                      TRNSTYPERETIRE +"',E"+
+                      memo+",'"+
                       blocktimestamp+"');";
                        
                   PGresult *res = PQexec(conn, insertQuery.c_str());
@@ -2007,8 +2047,8 @@ public:
                     actionaccount+"','"+
                     receiveraccount+"',"+
                     actionordinal+",'"+
-                    actionname+"','"+
-                    requestdata+"','"+
+                    actionname+"',E"+
+                    requestdata+",'"+
                     blocktimestamp+"');";
                 
            
@@ -2031,7 +2071,8 @@ public:
                 
                   string payeracct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["from"],DISALLOW_EMPTY_VALUES);                 
                   string payeeacct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["to"],DISALLOW_EMPTY_VALUES);
-                  string memo = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["memo"],DISALLOW_EMPTY_VALUES);
+                  string memot = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["memo"],DISALLOW_EMPTY_VALUES);
+                  string memo = escapesqlstring(memot,conn);
                   string trnstype = "transfer";
 
                   string FIOFEESTR = "FIO fee";
@@ -2050,19 +2091,19 @@ public:
                   string TRNSTYPEORACLEFEE = "oracle_fee";
                   string TRNSTYPEUNWRAP = "unwrap";
                   
-                  if (memo.find(FIOFEESTR)!= std::string::npos){
+                  if (memot.find(FIOFEESTR)!= std::string::npos){
                       trnstype = TRNSTYPEBLOCKCHAINFEE;
-                  }else if (memo.find(FIOTPIDSTR)!= std::string::npos){
+                  }else if (memot.find(FIOTPIDSTR)!= std::string::npos){
                     trnstype = TRNSTYPETPIDREWARD;
-                  }else if (memo.find(FIOSTAKINGSTR)!= std::string::npos){
+                  }else if (memot.find(FIOSTAKINGSTR)!= std::string::npos){
                     trnstype = TRNSTYPESTAKINGREWARD;
-                  }else if (memo.find(FIOPRODUCERSTR)!= std::string::npos){
+                  }else if (memot.find(FIOPRODUCERSTR)!= std::string::npos){
                     trnstype = TRNSTYPEBPREWARD;
-                  }else if (memo.find(FIOFOUNDATIONSTR)!= std::string::npos){
+                  }else if (memot.find(FIOFOUNDATIONSTR)!= std::string::npos){
                     trnstype = TRNSTYPEFOUNDATIONREWARD;
-                  }else if (memo.find(FIOWRAPPINGSTR)!= std::string::npos){
+                  }else if (memot.find(FIOWRAPPINGSTR)!= std::string::npos){
                     trnstype = TRNSTYPEORACLEFEE;
-                  }else if (memo.find(FIOUNWRAPPINGSTR)!= std::string::npos){
+                  }else if (memot.find(FIOUNWRAPPINGSTR)!= std::string::npos){
                     trnstype = TRNSTYPEUNWRAP;
                   } 
                   string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["quantity"],DISALLOW_EMPTY_VALUES);
@@ -2079,8 +2120,8 @@ public:
                       payeracct+"','"+
                       payeeacct+"',"+
                       sufamount+",'"+
-                      trnstype +"','"+
-                      memo+"','"+
+                      trnstype +"',E"+
+                      memo+",'"+
                       blocktimestamp+"');";
                       
                   PGresult *res = PQexec(conn, insertQuery.c_str());
@@ -2093,7 +2134,7 @@ public:
                  else if ((actionname == "issue")&&(receiveraccount == "fio.token")){
                   string payeracct = "eosio";               
                   string payeeacct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["to"],DISALLOW_EMPTY_VALUES);
-                  string memo = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["memo"],DISALLOW_EMPTY_VALUES);
+                  string memo = getjsonsqlescapedstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["memo"],DISALLOW_EMPTY_VALUES,conn);
                   string TRNSTYPETOKENMINT = "token_mint";
                   string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["quantity"],DISALLOW_EMPTY_VALUES);
                   sufamount.erase(std::remove(sufamount.begin(), sufamount.end(), '.'), sufamount.end());
@@ -2108,8 +2149,8 @@ public:
                       payeracct+"','"+
                       payeeacct+"',"+
                       sufamount+",'"+
-                      TRNSTYPETOKENMINT +"','"+
-                      memo+"','"+
+                      TRNSTYPETOKENMINT +"',E"+
+                      memo+",'"+
                       blocktimestamp+"');";
                       
                   PGresult *res = PQexec(conn, insertQuery.c_str());
@@ -2121,11 +2162,12 @@ public:
                 } //end if action is issue
                 else if (actionname == "bind2eosio"){
                   string accountnm = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["account"],ALLOW_EMPTY_VALUES);                 
-                  string pubkey = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["client_key"],ALLOW_EMPTY_VALUES);
+                  string pubkeyt = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["client_key"],ALLOW_EMPTY_VALUES);
+                  string pubkey = escapesqlstring(pubkeyt,conn);
                   string insertQuery = "SELECT insupdaccounts("+
                       bnums+",'"+
-                      accountnm+"','"+
-                      pubkey+"','"+
+                      accountnm+"',E"+
+                      pubkey+",'"+
                       blocktimestamp +"','true');";
                       
                   PGresult *res = PQexec(conn, insertQuery.c_str());
@@ -2199,7 +2241,9 @@ public:
        async_send_events();
     }
     }catch(...){ 
-      PQfinish(conn);
+       if (PQstatus(conn) != CONNECTION_OK) {
+        PQfinish(conn);
+       }
       abort_receiver();
     }
    
