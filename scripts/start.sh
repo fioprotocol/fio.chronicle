@@ -7,12 +7,20 @@ cd $( dirname "${BASH_SOURCE[0]}" )/..
 # Load utility functions
 . ${SCRIPTS_DIR}/utils.sh
 
+# Perform initial verification
+PID=$(pgrep chronicle)
+if [[ -n $PID ]]; then
+   echo && echo "ERROR: FIO.Chronicle appears to be running! Use the stop script to stop FIO.Chronicle..."
+   echo
+   exit 1
+fi
+
 function usage() {
    printf "\\nUsage: $0 OPTION...
-  -i     FIO.Chronicle Install Directory
-  -r     Reset FIO.Chronicle state
-  -x     Run in debug mode
-  -h     Display usage
+   -i     FIO.Chronicle Install Directory
+   -r     Reset FIO.Chronicle state
+   -x     Run in debug mode
+   -h     Display usage
    \\n" "$0" 1>&2
    exit 1
 }
@@ -65,13 +73,6 @@ fi
 if [[ -n ${INSTALL_DIR} && ! ( -d ${INSTALL_DIR} && -x ${INSTALL_DIR}/chronicle-receiver ) ]]; then
    echo && echo "ERROR: FIO.Chronicle executable, ${INSTALL_DIR}/chronicle-receiver, invalid or not found!"
    usage
-fi
-
-PID=$(pgrep chronicle)
-if [[ -n $PID ]]; then
-   echo && echo "ERROR: FIO.Chronicle appears to be running! Use the stop script to stop FIO.Chronicle..."
-   echo
-   exit 1
 fi
 
 echo && echo "Starting Fio.Chronicle..."
