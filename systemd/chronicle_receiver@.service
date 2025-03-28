@@ -1,5 +1,8 @@
 [Unit]
 Description=FIO Chronicle
+After=postgresql.service
+BindsTo=postgresql.service
+
 [Service]
 Type=simple
 ExecStart=/usr/local/sbin/chronicle-receiver --config-dir=/srv/%i/chronicle-config --data-dir=/srv/%i/chronicle-data --end-block=400000000
@@ -12,4 +15,3 @@ KillMode=control-group
 
 [Install]
 WantedBy=multi-user.target
-
