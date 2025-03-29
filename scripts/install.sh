@@ -129,12 +129,16 @@ fi
 # local install (into /opt)
 # system install (/usr/local/bin, etc/fio/chronicle, /var/lib/fio-chronicle)
 echo
-if yes_or_no "Clean up any exiting system install"; then
-   sudo systemctl stop chronicle_receiver@fio
-   sudo systemctl disable chronicle_receiver@fio
-   sudo systemctl daemon-reload
-   sudo rm -f /usr/local/sbin/chronicle-receiver && sudo rm -rf /srv/fio/ \
-      && sudo rm -f /lib/systemd/system/chronicle_receiver@.service
+if yes_or_no "Clean up any existing install"; then
+   if $SYSTEM_INSTALL; then
+      sudo systemctl stop chronicle_receiver@fio
+      sudo systemctl disable chronicle_receiver@fio
+      sudo systemctl daemon-reload
+      sudo rm -f /usr/local/sbin/chronicle-receiver && sudo rm -rf /srv/fio/ \
+         && sudo rm -f /lib/systemd/system/chronicle_receiver@.service
+   else
+      rm -rf ${INSTALL_DIR}
+   fi
 fi
 
 if ! $SYSTEM_INSTALL; then
