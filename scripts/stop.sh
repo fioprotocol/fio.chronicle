@@ -7,6 +7,13 @@ cd $( dirname "${BASH_SOURCE[0]}" )/..
 # Load utility functions
 . ${SCRIPTS_DIR}/utils.sh
 
+# Test user perms
+if [[ "$EUID" -eq 0 ]]; then
+   echo && echo "ERROR: Script should not be run as root! Exiting..."
+   echo
+   exit 1
+fi
+
 function usage() {
    printf "\\nUsage: $0 OPTION...
   -x     Run in debug mode
@@ -55,6 +62,16 @@ if ! ${SERVICE} ; then
       if yes_or_no "Use systemctl to stop FIO.Chronicle receiver"; then
         SERVICE=true
       fi
+   fi
+fi
+
+if ${SERVICE}; then
+   groups $(id -un) | grep sudo >/dev/null
+   if [[ $? -ne 0 ]]; then
+      echo
+      echo "ERROR: User $(id -un) does NOT have sudo privilege! sudo privilege is required to use systemctl. Exiting..."
+      echo
+      exit 1
    fi
 fi
 
