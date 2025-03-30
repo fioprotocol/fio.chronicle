@@ -108,7 +108,7 @@ if ! ${SERVICE}; then
       usage
    fi
 else
-   DATA_DIR=${DATA_DIR:-/srv/chronicle-data}
+   DATA_DIR=${DATA_DIR:-/srv/fio/chronicle-data}
 fi
 
 if [[ -d ${SNAPSHOT} ]]; then
