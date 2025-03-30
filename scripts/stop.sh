@@ -49,7 +49,7 @@ fi
 echo && echo -n "Stopping FIO.Chronicle gracefully..."
 
 if ! ${SERVICE} ; then
-   if systemctl -q is-active chronicle-receiver; then
+   if systemctl -q is-enabled chronicle_receiver@fio; then
       echo && echo "FIO.Chronicle receiver appears to be installed as a service"
       echo
       if yes_or_no "Use systemctl to stop FIO.Chronicle receiver"; then
@@ -80,7 +80,7 @@ if ! ${SERVICE}; then
       kill -INT $PID
    fi
 else
-   sudo systemctl stop chronicle-receiver@fio
+   sudo systemctl stop chronicle_receiver@fio
 fi
 
 sleep 1

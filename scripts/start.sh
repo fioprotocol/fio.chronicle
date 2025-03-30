@@ -80,7 +80,7 @@ fi
 
 echo && echo "Starting Fio.Chronicle..."
 if ! ${SERVICE} ; then
-   if systemctl -q is-active chronicle-receiver; then
+   if systemctl -q is-enabled chronicle_receiver@fio; then
       echo && echo "FIO.Chronicle receiver appears to be installed as a service"
       echo
       if yes_or_no "Use systemctl to start FIO.Chronicle receiver"; then
@@ -112,7 +112,7 @@ if ! ${SERVICE}; then
    [[ -e ${BIN_DIR}/log/chronicle.log ]] && mv ${BIN_DIR}/log/chronicle.log ${BIN_DIR}/log/chronicle-`date +%Y-%m-%dT%H%M%S`.log
    ${BIN_DIR}/chronicle-receiver --config-dir=${BIN_DIR}/config --data-dir=${BIN_DIR}/data --end-block=400000000 2>&1 | tee -a ${BIN_DIR}/log/chronicle.log &
 else
-   sudo systemctl start chronicle-receiver@fio
+   sudo systemctl start chronicle_receiver@fio
 fi
 
 echo && echo "Finished"

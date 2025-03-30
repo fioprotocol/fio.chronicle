@@ -84,8 +84,15 @@ if $IMPORT && [[ ! -r ${SNAPSHOT} ]]; then
    usage
 fi
 
+PID=$(pgrep chronicle)
+if [[ -n $PID ]]; then
+   echo && echo "ERROR: FIO.Chronicle appears to be running! Stop FIO.Chronicle before proceeding."
+   echo
+   exit 1
+fi
+
 if ! ${SERVICE} ; then
-   if systemctl -q is-active chronicle-receiver; then
+   if systemctl -q is-enabled chronicle_receiver@fio; then
       echo && echo "FIO.Chronicle receiver appears to be installed as a service"
       echo
       if yes_or_no "Is FIO.Chronicle receiver installed as a service"; then
@@ -118,13 +125,6 @@ makedir ${SNAPSHOT_DIR}
 if $EXPORT && [[ ! -w ${SNAPSHOT_DIR} ]]; then
    echo && echo "Unable to write snapshot to ${SNAPSHOT_DIR}!"
    usage
-fi
-
-PID=$(pgrep chronicle)
-if [[ -n $PID ]]; then
-   echo && echo "ERROR: FIO.Chronicle appears to be running! Stop FIO.Chronicle before proceeding."
-   echo
-   exit 1
 fi
 
 if $EXPORT; then
