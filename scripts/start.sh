@@ -17,7 +17,8 @@ fi
 
 function usage() {
    printf "\\nUsage: $0 OPTION...
-   -i     FIO.Chronicle Install Directory
+   -b     FIO.Chronicle Binary Directory
+   -d     FIO.Chronicle Data Directory
    -r     Reset FIO.Chronicle state
    -x     Run in debug mode
    -h     Display usage
@@ -28,10 +29,13 @@ function usage() {
 DEBUG=${DEBUG:-false}
 RESET=${RESET:-false}
 if [ $# -ne 0 ]; then
-   while getopts "i:rxh" opt; do
+   while getopts "b:d:rxh" opt; do
       case "${opt}" in
-      i)
-         INSTALL_DIR=${OPTARG}
+      b)
+         BIN_DIR=${OPTARG}
+         ;;
+      d)
+         DATA_DIR=${OPTARG}
          ;;
       r)
          RESET=true
@@ -70,14 +74,14 @@ fi
 # /srv/fio/chronicle-data
 # /var/log?
 
-if [[ -n ${INSTALL_DIR} && ! ( -d ${INSTALL_DIR} && -x ${INSTALL_DIR}/chronicle-receiver ) ]]; then
-   echo && echo "ERROR: FIO.Chronicle executable, ${INSTALL_DIR}/chronicle-receiver, invalid or not found!"
+if [[ -n ${BIN_DIR} && ! ( -d ${BIN_DIR} && -x ${BIN_DIR}/chronicle-receiver ) ]]; then
+   echo && echo "ERROR: FIO.Chronicle executable, ${BIN_DIR}/chronicle-receiver, invalid or not found!"
    usage
 fi
 
 echo && echo "Starting Fio.Chronicle..."
 IS_SERVICE=false
-if [[ -z ${INSTALL_DIR} ]]; then
+if [[ -z ${BIN_DIR} ]]; then
    if systemctl -q is-active chronicle-receiver; then
       echo && echo "FIO.Chronicle receiver appears to be installed as a service"
       echo && echo "Using systemctl to start FIO.Chronicle receiver..."
@@ -99,8 +103,8 @@ if $RESET; then
   fi
 fi
 
-INSTALL_DIR=${INSTALL_DIR:-/opt/fio-chronicle}
-[[ -e ${INSTALL_DIR}/log/chronicle.log ]] && mv ${INSTALL_DIR}/log/chronicle.log ${INSTALL_DIR}/log/chronicle-`date +%Y-%m-%dT%H%M%S`.log
-${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --end-block=400000000 2>&1 | tee -a ${INSTALL_DIR}/log/chronicle.log &
+BIN_DIR=${BIN_DIR:-/opt/fio-chronicle}
+[[ -e ${BIN_DIR}/log/chronicle.log ]] && mv ${BIN_DIR}/log/chronicle.log ${BIN_DIR}/log/chronicle-`date +%Y-%m-%dT%H%M%S`.log
+${BIN_DIR}/chronicle-receiver --config-dir=${BIN_DIR}/config --data-dir=${BIN_DIR}/data --end-block=400000000 2>&1 | tee -a ${BIN_DIR}/log/chronicle.log &
 
 echo && echo "Finished"

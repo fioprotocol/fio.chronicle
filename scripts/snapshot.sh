@@ -9,11 +9,13 @@ cd $( dirname "${BASH_SOURCE[0]}" )/..
 
 function usage() {
    printf "\\nUsage: $0 OPTION...
-  -e     Export FIO.Chronicle State
-  -i     Import FIO.Chronicle State
-  -s     FIO.Chronicle Snapshot Directory/File
-  -x     Run in debug mode
-  -h     Display usage
+   -a     FIO.Chronicle Archive Directory/File
+   -d     FIO.Chronicle Data Directory (state)
+   -e     Export FIO.Chronicle State
+   -i     Import FIO.Chronicle State
+   -s     System: Start/Stop via systemctl
+   -x     Run in debug mode
+   -h     Display usage
    \\n" "$0" 1>&2
    exit 1
 }
@@ -21,9 +23,16 @@ function usage() {
 DEBUG=${DEBUG:-false}
 IMPORT=${IMPORT:-false}
 EXPORT=${EXPORT:-false}
+SYSTEM_INSTALL=${SYSTEM_INSTALL:-false}
 if [ $# -ne 0 ]; then
-   while getopts "eis:xh" opt; do
+   while getopts "a:d:eisxh" opt; do
       case "${opt}" in
+      a)
+         SNAPSHOT=${OPTARG}
+         ;;
+      d)
+         DATA_DIR=${OPTARG}
+         ;;
       e)
          EXPORT=true
          ACTION="Export"
@@ -33,7 +42,7 @@ if [ $# -ne 0 ]; then
          ACTION="Import"
          ;;
       s)
-         SNAPSHOT=${OPTARG}
+         SYSTEM_INSTALL=true
          ;;
       x)
          DEBUG=true

@@ -95,7 +95,7 @@ To install fio.chronicle as a system application (daemon), under control of syst
 ./scripts/install.sh -s
 ```
 
-For non-system installations, the FIO.Chronicle executable, configuration, and state are installed to the target directory. Startup, shutdown, and state capture are accomplished either manually or through use of the convenience scripts.
+For non-system installations, the FIO.Chronicle executable, configuration, and state are installed to the target directory. Startup, shutdown, and state capture are accomplished either manually or through use of the convenience scripts; _start.sh_, _stop.sh_, and _snapshot.sh_.
 
 For system installations the FIO.Chronicle executable is installed to _/usr/local/sbin_, the configuration and state are installed to _/srv/fio_. Startup and shutdown are accomplished through use of systemctl.
 

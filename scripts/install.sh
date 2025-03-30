@@ -44,7 +44,7 @@ function usage() {
    echo
    printf "Usage: $0 OPTION...
    -i     Intall Directory (FIO.Chronicle binary). Default: /opt/fio-chronicle
-   -s     System Install: to /usr/local/sbin, Start/Stop via systemctl
+   -s     System Install: /usr/local/sbin and /srv/fio, Start/Stop via systemctl
    -x     Run in debug mode
    -h     Display usage
    \\n" "$0" 1>&2
