@@ -28,8 +28,9 @@ function usage() {
 
 DEBUG=${DEBUG:-false}
 RESET=${RESET:-false}
+SERVICE=${SERVICE:-false}
 if [ $# -ne 0 ]; then
-   while getopts "b:d:rxh" opt; do
+   while getopts "b:d:rsxh" opt; do
       case "${opt}" in
       b)
          BIN_DIR=${OPTARG}
@@ -39,6 +40,9 @@ if [ $# -ne 0 ]; then
          ;;
       r)
          RESET=true
+         ;;
+      s)
+         SERVICE=true
          ;;
       x)
          DEBUG=true
@@ -68,43 +72,47 @@ fi
 # /opt/fio-chronicle/data/receiver-state
 # /opt/fio-chronicle/log
 
-# System install
+# Service install
 # /usr/local/sbin/chronicle-receiver
 # /srv/fio/chronicle-config
 # /srv/fio/chronicle-data
 # /var/log?
 
-if [[ -n ${BIN_DIR} && ! ( -d ${BIN_DIR} && -x ${BIN_DIR}/chronicle-receiver ) ]]; then
-   echo && echo "ERROR: FIO.Chronicle executable, ${BIN_DIR}/chronicle-receiver, invalid or not found!"
-   usage
-fi
-
 echo && echo "Starting Fio.Chronicle..."
-IS_SERVICE=false
-if [[ -z ${BIN_DIR} ]]; then
+if ! ${SERVICE} ; then
    if systemctl -q is-active chronicle-receiver; then
       echo && echo "FIO.Chronicle receiver appears to be installed as a service"
-      echo && echo "Using systemctl to start FIO.Chronicle receiver..."
-      pause
-      if [[ $RESET ]]; then
-         echo && echo "WARNING: RESET is not possible when using systemctl; State must be reset manually..."
-         pause
+      echo
+      if yes_or_no "Use systemctl to start FIO.Chronicle receiver"; then
+        SERVICE=true
       fi
-      sudo systemctl start chronicle-receiver
-      exit 0
    fi
+fi
+
+if ! ${SERVICE}; then
+   BIN_DIR=${BIN_DIR:-/opt/fio-chronicle}
+   if [[ ! ( -d ${BIN_DIR} && -x ${BIN_DIR}/chronicle-receiver ) ]]; then
+      echo && echo "ERROR: FIO.Chronicle executable, ${BIN_DIR}/chronicle-receiver, invalid or not found!"
+      usage
+   fi
+   DATA_DIR=${DATA_DIR:-${BIN_DIR}/data}
+else
+   DATA_DIR=${DATA_DIR:-/srv/chronicle-data}
 fi
 
 if $RESET; then
    echo && echo "Reset FIO.Chronicle state..." && echo
    if yes_or_no "Proceed"; then
-      rm -f ${DATA_DIR}/lock.bin
-      rm -f ${DATA_DIR}/shared_memory.bin
+      sudo rm -f ${DATA_DIR}/lock.bin
+      sudo rm -f ${DATA_DIR}/shared_memory.bin
   fi
 fi
 
-BIN_DIR=${BIN_DIR:-/opt/fio-chronicle}
-[[ -e ${BIN_DIR}/log/chronicle.log ]] && mv ${BIN_DIR}/log/chronicle.log ${BIN_DIR}/log/chronicle-`date +%Y-%m-%dT%H%M%S`.log
-${BIN_DIR}/chronicle-receiver --config-dir=${BIN_DIR}/config --data-dir=${BIN_DIR}/data --end-block=400000000 2>&1 | tee -a ${BIN_DIR}/log/chronicle.log &
+if ! ${SERVICE}; then
+   [[ -e ${BIN_DIR}/log/chronicle.log ]] && mv ${BIN_DIR}/log/chronicle.log ${BIN_DIR}/log/chronicle-`date +%Y-%m-%dT%H%M%S`.log
+   ${BIN_DIR}/chronicle-receiver --config-dir=${BIN_DIR}/config --data-dir=${BIN_DIR}/data --end-block=400000000 2>&1 | tee -a ${BIN_DIR}/log/chronicle.log &
+else
+   sudo systemctl start chronicle-receiver@fio
+fi
 
 echo && echo "Finished"

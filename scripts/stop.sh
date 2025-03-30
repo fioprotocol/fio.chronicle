@@ -16,9 +16,13 @@ function usage() {
 }
 
 DEBUG=${DEBUG:-false}
+SERVICE=${SERVICE:-false}
 if [ $# -ne 0 ]; then
-   while getopts "xh" opt; do
+   while getopts "sxh" opt; do
       case "${opt}" in
+      s)
+         SERVICE=true
+         ;;
       x)
          DEBUG=true
          set -x
@@ -43,25 +47,40 @@ fi
 
 # Stop chronicle (note this depends on an idle postgres)
 echo && echo -n "Stopping FIO.Chronicle gracefully..."
-COUNTER=0
-while [ $COUNTER -lt 100 ]; do
-   COUNTER=$(($COUNTER+1))
 
+if ! ${SERVICE} ; then
+   if systemctl -q is-active chronicle-receiver; then
+      echo && echo "FIO.Chronicle receiver appears to be installed as a service"
+      echo
+      if yes_or_no "Use systemctl to stop FIO.Chronicle receiver"; then
+        SERVICE=true
+      fi
+   fi
+fi
+
+if ! ${SERVICE}; then
+   COUNTER=0
+   while [ $COUNTER -lt 100 ]; do
+      COUNTER=$(($COUNTER+1))
+
+      PID=$(pgrep chronicle)
+      if [[ -n $PID ]]; then
+         ps -ef | grep -v grep | grep relicdb | grep -q idle && kill -INT $PID
+      else
+         echo "stopped!"
+         break
+      fi
+   done
+
+   # Check if really down...
    PID=$(pgrep chronicle)
    if [[ -n $PID ]]; then
-      ps -ef | grep -v grep | grep relicdb | grep -q idle && kill -INT $PID
-   else
-      echo "stopped!"
-      break
+      echo && echo "WARNING: Unable to shut down gracefully! Shut down by force?"
+      pause
+      kill -INT $PID
    fi
-done
-
-# Check if really down...
-PID=$(pgrep chronicle)
-if [[ -n $PID ]]; then
-   echo && echo "WARNING: Unable to shut down gracefully! Shut down by force?"
-   pause
-   kill -INT $PID
+else
+   sudo systemctl stop chronicle-receiver@fio
 fi
 
 sleep 1

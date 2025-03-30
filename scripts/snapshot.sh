@@ -11,9 +11,9 @@ function usage() {
    printf "\\nUsage: $0 OPTION...
    -a     FIO.Chronicle Archive Directory/File
    -d     FIO.Chronicle Data Directory (state)
-   -e     Export FIO.Chronicle State
-   -i     Import FIO.Chronicle State
-   -s     System: Start/Stop via systemctl
+   -e     Export FIO.Chronicle State (Archive may be either a file or a directory)
+   -i     Import FIO.Chronicle State (Archive must be a file)
+   -s     Service: Start/Stop via systemctl
    -x     Run in debug mode
    -h     Display usage
    \\n" "$0" 1>&2
@@ -23,7 +23,7 @@ function usage() {
 DEBUG=${DEBUG:-false}
 IMPORT=${IMPORT:-false}
 EXPORT=${EXPORT:-false}
-SYSTEM_INSTALL=${SYSTEM_INSTALL:-false}
+SERVICE=${SERVICE:-false}
 if [ $# -ne 0 ]; then
    while getopts "a:d:eisxh" opt; do
       case "${opt}" in
@@ -42,7 +42,7 @@ if [ $# -ne 0 ]; then
          ACTION="Import"
          ;;
       s)
-         SYSTEM_INSTALL=true
+         SERVICE=true
          ;;
       x)
          DEBUG=true
@@ -66,27 +66,46 @@ if [ $# -ne 0 ]; then
    done
 fi
 
-INSTALL_DIR=${INSTALL_DIR:-/opt/fio-chronicle}
-if [[ ! -e ${INSTALL_DIR}/chronicle-receiver ]]; then
-   echo && echo "ERROR: ${INSTALL_DIR}/chronicle-receiver not found!"
-   usage
-fi
-
 if ! ( ${EXPORT} || ${IMPORT} ); then
    echo && echo "ERROR: Either export or import must be specified!"
    usage
-
 fi
 
 if ${IMPORT} && [[ -z $SNAPSHOT ]]; then
-   echo && echo "ERROR: Import requires a snapshot is specified!"
+   echo && echo "ERROR: Import requires that a snapshot archive file is specified!"
+   usage
+fi
+if ${IMPORT} && [[ -d ${SNAPSHOT} ]]; then
+   echo && echo "ERROR: Import requires that a snapshot archive file is specified!"
+   usage
+fi
+if $IMPORT && [[ ! -r ${SNAPSHOT} ]]; then
+   echo && echo "ERROR: Unable to read snapshot archive file ${SNAPSHOT}!"
    usage
 fi
 
-if [[ -n ${SNAPSHOT} ]]; then
-   if [[ -d ${SNAPSHOT} ]]; then
-      SNAPSHOT=${SNAPSHOT}/fc-snapshot_`date +%Y-%m-%dT%H%M%S`.tar.gz
+if ! ${SERVICE} ; then
+   if systemctl -q is-active chronicle-receiver; then
+      echo && echo "FIO.Chronicle receiver appears to be installed as a service"
+      echo
+      if yes_or_no "Is FIO.Chronicle receiver installed as a service"; then
+        SERVICE=true
+      fi
    fi
+fi
+
+if ! ${SERVICE}; then
+   DATA_DIR=${DATA_DIR:-/opt/fio-chronicle/data}
+   if [[ ! -d ${DATA_DIR} ]]; then
+      echo && echo "ERROR: FIO.Chronicle data directory, ${DATA_DIR}, invalid or not found!"
+      usage
+   fi
+else
+   DATA_DIR=${DATA_DIR:-/srv/chronicle-data}
+fi
+
+if [[ -d ${SNAPSHOT} ]]; then
+   SNAPSHOT=${SNAPSHOT}/fc-snapshot_`date +%Y-%m-%dT%H%M%S`.tar.gz
 fi
 SNAPSHOT=${SNAPSHOT:-${INSTALL_DIR}/bkup/fc-snapshot_`date +%Y-%m-%dT%H%M%S`.tar.gz}
 echo
@@ -100,14 +119,10 @@ if $EXPORT && [[ ! -w ${SNAPSHOT_DIR} ]]; then
    echo && echo "Unable to write snapshot to ${SNAPSHOT_DIR}!"
    usage
 fi
-if $IMPORT && [[ ! -r ${SNAPSHOT} ]]; then
-   echo && echo "Unable to read snapshot from ${SNAPSHOT}!"
-   usage
-fi
 
 PID=$(pgrep chronicle)
 if [[ -n $PID ]]; then
-   echo && echo "ERROR: FIO.Chronicle appears to be running! Stop FIO.Chronicle, using the stop script 'stop.sh', before proceeding."
+   echo && echo "ERROR: FIO.Chronicle appears to be running! Stop FIO.Chronicle before proceeding."
    echo
    exit 1
 fi
@@ -116,12 +131,13 @@ if $EXPORT; then
    echo && echo "Exporting FIO.Chronicle snapshot..." && echo
    # EOS Chronicle
    #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkup/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
-   tar -czf ${SNAPSHOT} -C ${INSTALL_DIR}/data/receiver-state lock.bin shared_memory.bin
+   tar -czf ${SNAPSHOT} -C ${DATA_DIR}/receiver-state lock.bin shared_memory.bin
 fi
 
 if $IMPORT; then
    echo && echo "Importing FIO.Chronicle snapshot..." && echo
    # EOS Chronicle
    #${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --save-snapshot=${INSTALL_DIR}/bkup/fio-chronicle.snapshot-`date +%Y-%m-%dT%H%M%S`
-   tar -xzf ${SNAPSHOT} -C ${INSTALL_DIR}/data/receiver-state
+   tar -xzf ${SNAPSHOT} -C ${DATA_DIR}/receiver-state
 fi
+echo && echo "Finished"

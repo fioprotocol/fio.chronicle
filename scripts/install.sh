@@ -44,7 +44,7 @@ function usage() {
    echo
    printf "Usage: $0 OPTION...
    -i     Intall Directory (FIO.Chronicle binary). Default: /opt/fio-chronicle
-   -s     System Install: /usr/local/sbin and /srv/fio, Start/Stop via systemctl
+   -s     Service Install: /usr/local/sbin and /srv/fio, Start/Stop via systemctl
    -x     Run in debug mode
    -h     Display usage
    \\n" "$0" 1>&2
@@ -53,7 +53,7 @@ function usage() {
 
 # Set global vars and get command line options
 DEBUG=${DEBUG:-false}
-SYSTEM_INSTALL=${SYSTEM_INSTALL:-false}
+SERVICE_INSTALL=${SERVICE_INSTALL:-false}
 if [ $# -ne 0 ]; then
    while getopts "i:sxh" opt; do
       # echo "flag -$flag, Argument $OPTARG";
@@ -66,7 +66,7 @@ if [ $# -ne 0 ]; then
          fi
          ;;
       s)
-         SYSTEM_INSTALL=true
+         SERVICE_INSTALL=true
          ;;
       x)
          DEBUG=true
@@ -91,7 +91,7 @@ if [ $# -ne 0 ]; then
 fi
 
 # Test user passing both -i and -s
-if ${SYSTEM_INSTALL} && [[ -n ${INSTALL_DIR} ]]; then
+if ${SERVICE_INSTALL} && [[ -n ${INSTALL_DIR} ]]; then
    echo && echo "WARNING: Ignoring ${INSTALL_DIR} (-i) due to System Install (-s)"
    pause
 fi
@@ -100,8 +100,8 @@ fi
 INSTALL_DIR=${INSTALL_DIR:-/opt/fio-chronicle}
 
 echo && echo "Installing Fio.Chronicle..."
-if ${SYSTEM_INSTALL}; then
-   echo "   Type             : System Install"
+if ${SERVICE_INSTALL}; then
+   echo "   Type             : Service Install"
    echo "   Install Directory: /usr/local/sbin"
    echo "   Config Directory : /srv/fio/chronicle-config"
    echo "   Data Directory   : /srv/fio/chronicle-data"
@@ -130,7 +130,7 @@ fi
 # system install (/usr/local/bin, etc/fio/chronicle, /var/lib/fio-chronicle)
 echo
 if yes_or_no "Clean up any existing install"; then
-   if $SYSTEM_INSTALL; then
+   if $SERVICE_INSTALL; then
       sudo systemctl stop chronicle_receiver@fio
       sudo systemctl disable chronicle_receiver@fio
       sudo systemctl daemon-reload
@@ -141,7 +141,7 @@ if yes_or_no "Clean up any existing install"; then
    fi
 fi
 
-if ! $SYSTEM_INSTALL; then
+if ! $SERVICE_INSTALL; then
    makedir ${INSTALL_DIR}
    makedir ${INSTALL_DIR}/config
    makedir ${INSTALL_DIR}/data
