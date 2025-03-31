@@ -16,8 +16,9 @@ fi
 
 function usage() {
    printf "\\nUsage: $0 OPTION...
-  -x     Run in debug mode
-  -h     Display usage
+   -s     Service: Use systemctl to Stop
+   -x     Run in debug mode
+   -h     Display usage
    \\n" "$0" 1>&2
    exit 1
 }

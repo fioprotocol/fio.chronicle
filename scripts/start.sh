@@ -27,6 +27,7 @@ function usage() {
    -b     FIO.Chronicle Binary Directory
    -d     FIO.Chronicle Data Directory
    -r     Reset FIO.Chronicle state
+   -s     Service: Use systemctl to Start
    -x     Run in debug mode
    -h     Display usage
    \\n" "$0" 1>&2

@@ -27,7 +27,7 @@ function usage() {
    -d     FIO.Chronicle Data Directory (state)
    -e     Export FIO.Chronicle State (Archive may be either a file or a directory)
    -i     Import FIO.Chronicle State (Archive must be a file)
-   -s     Service: Start/Stop via systemctl
+   -s     Service: Data Directory = /srv/fio/chronicle-data
    -x     Run in debug mode
    -h     Display usage
    \\n" "$0" 1>&2
