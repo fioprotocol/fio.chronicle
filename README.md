@@ -90,14 +90,14 @@ To install fio.chronicle to the custom location, i.e. '/home/ubuntu/fio/chronicl
 ./scripts/install.sh -i /home/ubuntu/fio/chronicle
 ```
 
-To install fio.chronicle as a system application (daemon), under control of systemd, execute the following command;
+To install fio.chronicle as a service, under control of systemd and managed using systemctl, execute the following command;
 ```shell
 ./scripts/install.sh -s
 ```
 
-For non-system installations, the FIO.Chronicle executable, configuration, and state are installed to the target directory. Startup, shutdown, and state capture are accomplished either manually or through use of the convenience scripts; _start.sh_, _stop.sh_, and _snapshot.sh_.
+For non-service installations, the FIO.Chronicle executable, configuration, and state are installed to the target directory. Startup, shutdown, and state capture are accomplished either manually or through use of the convenience scripts; _start.sh_, _stop.sh_, and _snapshot.sh_.
 
-For system installations the FIO.Chronicle executable is installed to _/usr/local/sbin_, the configuration and state are installed to _/srv/fio_. Startup and shutdown are accomplished through use of systemctl.
+For service installations the FIO.Chronicle executable is installed to _/usr/local/sbin_, the configuration and state are installed to _/srv/fio_. Startup and shutdown are accomplished through use of systemctl.
 
 The script will output installation details including information about configuration. See the following configuration overview for more insight into the default configuration as well as how to customize it.
 
@@ -141,12 +141,18 @@ To manually start FIO.Chronicle, execute the command;
 ```
 Note that in the above command both a start and an end block number are specified, which limits processing to that block range. Specify a very large number for the `--end-block` parameter to process blocks for the foreseeable future.
 
+To capture standard output to a log, execute the above command redirecting standard ouput as follows;
+```shell
+mkdir -p /opt/fio-chronicle/log
+/opt/fio-chronicle/chronicle-receiver --config-dir=/opt/fio-chronicle/config --data-dir=/opt/fio-chronicle/data --start-block=1 --end-block=1000 2>&1 | tee -a /opt/fio-chronicle/log/chronicle.log &
+```
+
 For FIO.Chronicle service installations;  
 ```shell
 systemctl start chronicle_receiver@fio
 ```
 
-Using the start script, _start.sh_, execute the command;
+Using the start script, _start.sh_, execute the command (note that logging is captured in chronicle.log);
 ```shell
 ./scripts/start.sh
 ```
@@ -182,7 +188,16 @@ In the case that FIO.Chronicle is a service;
 
 **WARNING**: An exporter plugin as well as the application supporting that exporter should be in place before executing the command above. See the [FIO.Relic Readme](https://github.com/fioprotocol/fio.relic/blob/develop/README.md) for specific instructions to stand up the FIO.Relic database or the addendum below to set up a web socket server.
 
+### Logging:
+For local/non-service installations tail the log if standard output was redirected as follows;
+```shell
+tail -f /opt/fio-chronicle/log/chronicle.log
+```
 
+For service installations, execute the following command;
+```shell
+journalctl -u chronicle_receiver@fio -f
+```
 ### Data Capture: Export and Import
 To periodically take a snapshot of the FIO.Chronicle state, primarily for stand-up of another server or fallback to a previous state, the _snapshot.sh_ script is provided. This script provides functionality to both export and import state. Note that this state should coincide with the state resident in the FIO.Relic database.
 
