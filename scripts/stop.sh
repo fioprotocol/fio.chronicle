@@ -54,7 +54,7 @@ if [ $# -ne 0 ]; then
 fi
 
 # Stop chronicle (note this depends on an idle postgres)
-echo && echo -n "Stopping FIO.Chronicle gracefully..."
+echo && echo "Stopping FIO.Chronicle gracefully..."
 
 if ! ${SERVICE} ; then
    if systemctl -q is-enabled chronicle_receiver@fio; then
@@ -85,7 +85,6 @@ if ! ${SERVICE}; then
       if [[ -n $PID ]]; then
          ps -ef | grep -v grep | grep relicdb | grep -q idle && kill -INT $PID
       else
-         echo "stopped!"
          break
       fi
    done
@@ -104,7 +103,7 @@ fi
 sleep 1
 PID=$(pgrep chronicle)
 if [[ -n $PID ]]; then
-   echo && echo "ERROR: FIO.Chonicle not shut down!"
+   echo && echo "ERROR: FIO.Chonicle is not stopped!"
 else
-   echo && echo "FIO.Chronicle shut down"
+   echo && echo "ERROR: FIO.Chonicle is stopped!"
 fi

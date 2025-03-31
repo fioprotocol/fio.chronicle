@@ -133,4 +133,10 @@ else
    sudo systemctl start chronicle_receiver@fio
 fi
 
-echo && echo "Finished"
+sleep 1
+PID=$(pgrep chronicle)
+if [[ -z $PID ]]; then
+   echo && echo "ERROR: FIO.Chonicle is not started!"
+else
+   echo && echo "ERROR: FIO.Chonicle is started!"
+fi
