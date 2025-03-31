@@ -135,18 +135,50 @@ exp-relic-password = password123!
 These options will allow FIO.Chronicle to connect to a FIO State History node at `127.0.0.1:8080` (host:port) and will export processed data to the FIO.Relic PostgreSQL DB server running on host `127.0.0.1` and port `5432`.
 
 ### Starting the application
-For non-system installations, start and stop may be done manually or via the scripts _start.sh_, and _stop.sh_
-
 To manually start FIO.Chronicle, execute the command;
 ```shell
 /opt/fio-chronicle/chronicle-receiver --config-dir=/opt/fio-chronicle/config --data-dir=/opt/fio-chronicle/data --start-block=1 --end-block=1000
 ```
 Note that in the above command both a start and an end block number are specified, which limits processing to that block range. Specify a very large number for the `--end-block` parameter to process blocks for the foreseeable future.
 
-For system installations, _systemctl_ is used for starting and stopping the FIO.Chronicle application;  
-To start FIO.Chronicle: systemctl start chronicle_receiver@fio  
-To stop FIO.Chronicle: systemctl stop chronicle_receiver@fio
+For FIO.Chronicle service installations;  
+```shell
+systemctl start chronicle_receiver@fio
+```
 
+Using the start script, _start.sh_, execute the command;
+```shell
+./scripts/start.sh
+```
+or
+```shell
+./scripts/start.sh -b /home/ubuntu/fio/chronicle
+```
+In the case that FIO.Chronicle is a service;
+```shell
+./scripts/start.sh -s
+```
+
+### Stopping the application
+To stop FIO.Chronicle, execute the command;
+```shell
+pgrep chronicle
+kill -INT <PID>
+```
+
+For FIO.Chronicle service installations;  
+```shell
+systemctl stop chronicle_receiver@fio
+```
+
+Using the start script, _stop.sh_, execute the command;
+```shell
+./scripts/start.sh
+```
+In the case that FIO.Chronicle is a service;
+```shell
+./scripts/start.sh -s
+```
 
 **WARNING**: An exporter plugin as well as the application supporting that exporter should be in place before executing the command above. See the [FIO.Relic Readme](https://github.com/fioprotocol/fio.relic/blob/develop/README.md) for specific instructions to stand up the FIO.Relic database or the addendum below to set up a web socket server.
 
@@ -163,18 +195,23 @@ The snapshot file, _/opt/fio-chronicle/bkup/fc-snapshot-2025-03-16T132648.tar.gz
 
 Other examples include;
 ```shell
-sudo ./scripts/snapshot.sh -e -s /tmp
+sudo ./scripts/snapshot.sh -e -a /tmp
 ```
 The snapshot file, _/tmp/fc-snapshot-2025-03-16T132648.tar.gz_, will be created in the **/tmp** directory containing the FIO.Chronicle Relic DB Exporter state at March 16, 2025, 1:26:48 pm.
 
 ```shell
-sudo ./scripts/snapshot.sh -e -s /tmp/relicdb_snapshot
+sudo ./scripts/snapshot.sh -e -a /tmp/relicdb_snapshot
 ```
 The snapshot file, _/tmp/relicdb_snapshot_, will be created containing the FIO.Chronicle Relic DB Exporter state at March 16, 2025, 1:26:48 pm. Note that the file format is a tar gzip file regardless of the extention provided.
 
+```shell
+sudo ./scripts/snapshot.sh -e -s
+```
+The snapshot file, /srv/fio/chronicle-bkup/fc-snapshot-2025-03-16T132648.tar.gz_, will be created containing the FIO.Chronicle Relic DB Exporter state at March 16, 2025, 1:26:48 pm. Note that the '-s' argument signified that FIO.Chronicle was installed as a service.
+
 To import the FIO.Relic database schema including tables, functions, users and data execute the script, _snapshot.sh_, passing the argument '-i' (for import), and the '-s' argument specifying the snapshot file. For example, to import the data previously exported to the file _/tmp/relicdb_snapshot_, execute the command; 
 ```shell
-sudo ./scripts/snapshot.sh -i -s /tmp/relicdb_snapshot
+sudo ./scripts/snapshot.sh -i -a /tmp/relicdb_snapshot
 ```
 
 Note: ***The snapshot file is a complete export of the FIO.Relic database. Executing the import script will clear any and all data as well as tables, functions and users!***
