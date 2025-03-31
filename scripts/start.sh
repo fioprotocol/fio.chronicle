@@ -138,5 +138,5 @@ PID=$(pgrep chronicle)
 if [[ -z $PID ]]; then
    echo && echo "ERROR: FIO.Chonicle is not started!"
 else
-   echo && echo "ERROR: FIO.Chonicle is started!"
+   echo && echo "FIO.Chonicle started!"
 fi
