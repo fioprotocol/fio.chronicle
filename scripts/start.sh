@@ -7,26 +7,50 @@ cd $( dirname "${BASH_SOURCE[0]}" )/..
 # Load utility functions
 . ${SCRIPTS_DIR}/utils.sh
 
+# Test user perms
+if [[ "$EUID" -eq 0 ]]; then
+   echo && echo "ERROR: Script should not be run as root! Exiting..."
+   echo
+   exit 1
+fi
+
+# Perform initial verification
+PID=$(pgrep chronicle)
+if [[ -n $PID ]]; then
+   echo && echo "ERROR: FIO.Chronicle appears to be running! Use the stop script to stop FIO.Chronicle..."
+   echo
+   exit 1
+fi
+
 function usage() {
    printf "\\nUsage: $0 OPTION...
-  -i     FIO.Chronicle Install Directory
-  -r     Reset FIO.Chronicle state
-  -x     Run in debug mode
-  -h     Display usage
+   -b     FIO.Chronicle Binary Directory
+   -d     FIO.Chronicle Data Directory
+   -r     Reset FIO.Chronicle state
+   -s     Service: Use systemctl to Start
+   -x     Run in debug mode
+   -h     Display usage
    \\n" "$0" 1>&2
    exit 1
 }
 
 DEBUG=${DEBUG:-false}
 RESET=${RESET:-false}
+SERVICE=${SERVICE:-false}
 if [ $# -ne 0 ]; then
-   while getopts "i:rxh" opt; do
+   while getopts "b:d:rsxh" opt; do
       case "${opt}" in
-      i)
-         INSTALL_DIR=${OPTARG}
+      b)
+         BIN_DIR=${OPTARG}
+         ;;
+      d)
+         DATA_DIR=${OPTARG}
          ;;
       r)
          RESET=true
+         ;;
+      s)
+         SERVICE=true
          ;;
       x)
          DEBUG=true
@@ -56,50 +80,63 @@ fi
 # /opt/fio-chronicle/data/receiver-state
 # /opt/fio-chronicle/log
 
-# System install
+# Service install
 # /usr/local/sbin/chronicle-receiver
 # /srv/fio/chronicle-config
 # /srv/fio/chronicle-data
 # /var/log?
 
-if [[ -n ${INSTALL_DIR} && ! ( -d ${INSTALL_DIR} && -x ${INSTALL_DIR}/chronicle-receiver ) ]]; then
-   echo && echo "ERROR: FIO.Chronicle executable, ${INSTALL_DIR}/chronicle-receiver, invalid or not found!"
-   usage
-fi
-
-PID=$(pgrep chronicle)
-if [[ -n $PID ]]; then
-   echo && echo "ERROR: FIO.Chronicle appears to be running! Use the stop script to stop FIO.Chronicle..."
-   echo
-   exit 1
-fi
-
 echo && echo "Starting Fio.Chronicle..."
-IS_SERVICE=false
-if [[ -z ${INSTALL_DIR} ]]; then
-   if systemctl -q is-active chronicle-receiver; then
+if ! ${SERVICE} ; then
+   if systemctl -q is-enabled chronicle_receiver@fio; then
       echo && echo "FIO.Chronicle receiver appears to be installed as a service"
-      echo && echo "Using systemctl to start FIO.Chronicle receiver..."
-      pause
-      if [[ $RESET ]]; then
-         echo && echo "WARNING: RESET is not possible when using systemctl; State must be reset manually..."
-         pause
+      echo
+      if yes_or_no "Use systemctl to start FIO.Chronicle receiver"; then
+        SERVICE=true
       fi
-      sudo systemctl start chronicle-receiver
-      exit 0
    fi
+fi
+
+if ${SERVICE}; then
+   groups $(id -un) | grep sudo >/dev/null
+   if [[ $? -ne 0 ]]; then
+      echo
+      echo "ERROR: User $(id -un) does NOT have sudo privilege! sudo privilege is required to use systemctl. Exiting..."
+      echo
+      exit 1
+   fi
+fi
+
+if ! ${SERVICE}; then
+   BIN_DIR=${BIN_DIR:-/opt/fio-chronicle}
+   if [[ ! ( -d ${BIN_DIR} && -x ${BIN_DIR}/chronicle-receiver ) ]]; then
+      echo && echo "ERROR: FIO.Chronicle executable, ${BIN_DIR}/chronicle-receiver, invalid or not found!"
+      usage
+   fi
+   DATA_DIR=${DATA_DIR:-${BIN_DIR}/data}
+else
+   DATA_DIR=${DATA_DIR:-/srv/fio/chronicle-data}
 fi
 
 if $RESET; then
    echo && echo "Reset FIO.Chronicle state..." && echo
    if yes_or_no "Proceed"; then
-      rm -f ${DATA_DIR}/lock.bin
-      rm -f ${DATA_DIR}/shared_memory.bin
+      sudo rm -f ${DATA_DIR}/lock.bin
+      sudo rm -f ${DATA_DIR}/shared_memory.bin
   fi
 fi
 
-INSTALL_DIR=${INSTALL_DIR:-/opt/fio-chronicle}
-[[ -e ${INSTALL_DIR}/log/chronicle.log ]] && mv ${INSTALL_DIR}/log/chronicle.log ${INSTALL_DIR}/log/chronicle-`date +%Y-%m-%dT%H%M%S`.log
-${INSTALL_DIR}/chronicle-receiver --config-dir=${INSTALL_DIR}/config --data-dir=${INSTALL_DIR}/data --end-block=400000000 2>&1 | tee -a ${INSTALL_DIR}/log/chronicle.log &
+if ! ${SERVICE}; then
+   [[ -e ${BIN_DIR}/log/chronicle.log ]] && mv ${BIN_DIR}/log/chronicle.log ${BIN_DIR}/log/chronicle-`date +%Y-%m-%dT%H%M%S`.log
+   ${BIN_DIR}/chronicle-receiver --config-dir=${BIN_DIR}/config --data-dir=${BIN_DIR}/data --end-block=400000000 2>&1 | tee -a ${BIN_DIR}/log/chronicle.log &
+else
+   sudo systemctl start chronicle_receiver@fio
+fi
 
-echo && echo "Finished"
+sleep 1
+PID=$(pgrep chronicle)
+if [[ -z $PID ]]; then
+   echo && echo "ERROR: FIO.Chonicle is not started!"
+else
+   echo && echo "ERROR: FIO.Chonicle is started!"
+fi

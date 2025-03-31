@@ -7,18 +7,30 @@ cd $( dirname "${BASH_SOURCE[0]}" )/..
 # Load utility functions
 . ${SCRIPTS_DIR}/utils.sh
 
+# Test user perms
+if [[ "$EUID" -eq 0 ]]; then
+   echo && echo "ERROR: Script should not be run as root! Exiting..."
+   echo
+   exit 1
+fi
+
 function usage() {
    printf "\\nUsage: $0 OPTION...
-  -x     Run in debug mode
-  -h     Display usage
+   -s     Service: Use systemctl to Stop
+   -x     Run in debug mode
+   -h     Display usage
    \\n" "$0" 1>&2
    exit 1
 }
 
 DEBUG=${DEBUG:-false}
+SERVICE=${SERVICE:-false}
 if [ $# -ne 0 ]; then
-   while getopts "xh" opt; do
+   while getopts "sxh" opt; do
       case "${opt}" in
+      s)
+         SERVICE=true
+         ;;
       x)
          DEBUG=true
          set -x
@@ -42,32 +54,56 @@ if [ $# -ne 0 ]; then
 fi
 
 # Stop chronicle (note this depends on an idle postgres)
-echo && echo -n "Stopping FIO.Chronicle gracefully..."
-COUNTER=0
-while [ $COUNTER -lt 100 ]; do
-   COUNTER=$(($COUNTER+1))
+echo && echo "Stopping FIO.Chronicle gracefully..."
 
+if ! ${SERVICE} ; then
+   if systemctl -q is-enabled chronicle_receiver@fio; then
+      echo && echo "FIO.Chronicle receiver appears to be installed as a service"
+      echo
+      if yes_or_no "Use systemctl to stop FIO.Chronicle receiver"; then
+        SERVICE=true
+      fi
+   fi
+fi
+
+if ${SERVICE}; then
+   groups $(id -un) | grep sudo >/dev/null
+   if [[ $? -ne 0 ]]; then
+      echo
+      echo "ERROR: User $(id -un) does NOT have sudo privilege! sudo privilege is required to use systemctl. Exiting..."
+      echo
+      exit 1
+   fi
+fi
+
+if ! ${SERVICE}; then
+   COUNTER=0
+   while [ $COUNTER -lt 100 ]; do
+      COUNTER=$(($COUNTER+1))
+
+      PID=$(pgrep chronicle)
+      if [[ -n $PID ]]; then
+         ps -ef | grep -v grep | grep relicdb | grep -q idle && kill -INT $PID
+      else
+         break
+      fi
+   done
+
+   # Check if really down...
    PID=$(pgrep chronicle)
    if [[ -n $PID ]]; then
-      ps -ef | grep -v grep | grep relicdb | grep -q idle && kill -INT $PID
-   else
-      echo "stopped!"
-      break
+      echo && echo "WARNING: Unable to shut down gracefully! Shut down by force?"
+      pause
+      kill -INT $PID
    fi
-done
-
-# Check if really down...
-PID=$(pgrep chronicle)
-if [[ -n $PID ]]; then
-   echo && echo "WARNING: Unable to shut down gracefully! Shut down by force?"
-   pause
-   kill -INT $PID
+else
+   sudo systemctl stop chronicle_receiver@fio
 fi
 
 sleep 1
 PID=$(pgrep chronicle)
 if [[ -n $PID ]]; then
-   echo && echo "ERROR: FIO.Chonicle not shut down!"
+   echo && echo "ERROR: FIO.Chonicle is not stopped!"
 else
-   echo && echo "FIO.Chronicle shut down"
+   echo && echo "ERROR: FIO.Chonicle is stopped!"
 fi
