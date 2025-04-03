@@ -2,11 +2,9 @@
 FIO.Chronicle is a software application designed to process the state and trace history of the [FIO](https://github.com/fioprotocol/fio) blockchain and is a fork of the [EOSChronicle](https://github.com/EOSChronicleProject/eos-chronicle) project. For more detailed information regarding FIO.Chronicle and its origin, EOSChronicle, see the [FIO.Chronicle Overview](https://github.com/fioprotocol/fio.chronicle/blob/develop/docs/overview.md).
 
 * For information on FIO Protocol, visit [FIO](https://fio.net).
-* To join the community, visit [Discord](https://discord.com/invite/pHBmJCc)
+* For information on the FIO Chain, API, and SDKs, including detailed clone, build and deploy instructions, visit [FIO Protocol Developer Hub](https://dev.fio.net).
 
 ## Licenses and Copyrights
-[FIO License](https://github.com/fioprotocol/fio/blob/master/LICENSE)
-
 [FIO.Chronicle License](https://github.com/fioprotocol/fio.chronicle/blob/develop/LICENSE.txt)
 
 Source code repository: https://github.com/fioprotocol/fio.chronicle
@@ -31,22 +29,11 @@ limitations under the License.
 
 See the [release notes](https://github.com/fioprotocol/fio.chronicle/blob/develop/docs/releases.md) for information regarding FIO/EOS Chronicle releases.
 
-## Relevant Documentation (Tutorial, Chat, Clients, Uses)
-
-* [Chronicle Telegram chat](https://t.me/+TMWWcV1gBxQiqIkm)
-
-* [Chronicle Tutorial](https://github.com/EOSChronicleProject/chronicle-tutorial) explains the nodeos and Chronicle server installation in detail.
-
-* [Chronicle Consumer Module](https://github.com/EOSChronicleProject/chronicle-consumer-npm) is a Node.js module that consumer processes can be based on.
-
-* [Chronicle Consumer Module Examples](https://github.com/EOSChronicleProject/chronicle-consumer-npm-examples) is a number of examples using the Node.js module.
-
-* [Awesome Chronicle](https://github.com/EOSChronicleProject/awesome-chronicle) is a list of software projects and services using the software.
-
-* [Docker File](https://github.com/EOSTribe/eos-chronicle-docker) provided by EOS Tribe
-
 ## Clone the repository
-To clone the FIO.Chronicle repository, execute the command; `git clone --recursive https://github.com/fioprotocol/fio.chronicle.git`. see [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) for more information.
+To clone the FIO.Chronicle repository, execute the command;
+```shell
+git clone --recursive https://github.com/fioprotocol/fio.chronicle.git
+```
 
 ## Build and Install Instructions
 Minimum build requirements: Cmake 3.11, GCC 8.3.0
