@@ -193,30 +193,28 @@ To export the FIO.Chronicle state execute the script, _snapshot.sh_, passing the
 ```shell
 sudo ./scripts/snapshot.sh -e
 ```
-The snapshot file, _/opt/fio-chronicle/bkup/fc-snapshot-2025-03-16T132648.tar.gz_, will be created in the **/opt/fio-chronicle/bkup** directory containing the FIO.Chronicle Relic DB Exporter state at March 16, 2025, 1:26:48 pm. Note that _/opt/fio-chronicle_ is the default installation direction for FIO.Chronicle.
+The snapshot file, _/opt/fio-chronicle/bkup/fc-snapshot-2025-03-16T132648.tar.gz_, will be created in the **/opt/fio-chronicle/bkup** directory containing the FIO.Chronicle state at March 16, 2025, 1:26:48 pm. Note that _/opt/fio-chronicle_ is the default installation directory for FIO.Chronicle.
 
 Other examples include;
 ```shell
 sudo ./scripts/snapshot.sh -e -a /tmp
 ```
-The snapshot file, _/tmp/fc-snapshot-2025-03-16T132648.tar.gz_, will be created in the **/tmp** directory containing the FIO.Chronicle Relic DB Exporter state at March 16, 2025, 1:26:48 pm.
+The snapshot file, _/tmp/fc-snapshot-2025-03-16T132648.tar.gz_, will be created in the **/tmp** directory containing the FIO.Chronicle state at March 16, 2025, 1:26:48 pm.
 
 ```shell
-sudo ./scripts/snapshot.sh -e -a /tmp/relicdb_snapshot
+sudo ./scripts/snapshot.sh -e -a /tmp/chronicle_snapshot
 ```
-The snapshot file, _/tmp/relicdb_snapshot_, will be created containing the FIO.Chronicle Relic DB Exporter state at March 16, 2025, 1:26:48 pm. Note that the file format is a tar gzip file regardless of the extention provided.
+The snapshot file, _/tmp/chronicle_snapshot_, will be created containing the FIO.Chronicle state at March 16, 2025, 1:26:48 pm. Note that the file format is a tar gzip file regardless of the extention provided.
 
 ```shell
 sudo ./scripts/snapshot.sh -e -s
 ```
-The snapshot file, /srv/fio/chronicle-bkup/fc-snapshot-2025-03-16T132648.tar.gz_, will be created containing the FIO.Chronicle Relic DB Exporter state at March 16, 2025, 1:26:48 pm. Note that the '-s' argument signified that FIO.Chronicle was installed as a service.
+The snapshot file, /srv/fio/chronicle-bkup/fc-snapshot-2025-03-16T132648.tar.gz_, will be created containing the FIO.Chronicle state at March 16, 2025, 1:26:48 pm. Note that the '-s' argument signified that FIO.Chronicle was installed as a service.
 
-To import the FIO.Relic database schema including tables, functions, users and data execute the script, _snapshot.sh_, passing the argument '-i' (for import), and the '-s' argument specifying the snapshot file. For example, to import the data previously exported to the file _/tmp/relicdb_snapshot_, execute the command; 
+To import the FIO.Chronicle state execute the script, _snapshot.sh_, passing the argument '-i' (for import), and the '-s' argument specifying the snapshot file. For example, to import the data previously exported to the file _/tmp/chronicle_snapshot_, execute the command; 
 ```shell
-sudo ./scripts/snapshot.sh -i -a /tmp/relicdb_snapshot
+sudo ./scripts/snapshot.sh -i -a /tmp/chronicle_snapshot
 ```
-
-Note: ***The snapshot file is a complete export of the FIO.Relic database. Executing the import script will clear any and all data as well as tables, functions and users!***
 
 ### Addendum
 For the purposes of confirming end-to-end connectivity refer to the configuration as well as the documents below to start a local FIO state history node as well as a local web socket server
