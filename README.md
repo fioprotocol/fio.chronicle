@@ -2,11 +2,9 @@
 FIO.Chronicle is a software application designed to process the state and trace history of the [FIO](https://github.com/fioprotocol/fio) blockchain and is a fork of the [EOSChronicle](https://github.com/EOSChronicleProject/eos-chronicle) project. For more detailed information regarding FIO.Chronicle and its origin, EOSChronicle, see the [FIO.Chronicle Overview](https://github.com/fioprotocol/fio.chronicle/blob/develop/docs/overview.md).
 
 * For information on FIO Protocol, visit [FIO](https://fio.net).
-* To join the community, visit [Discord](https://discord.com/invite/pHBmJCc)
+* For information on the FIO Chain, API, and SDKs, including detailed clone, build and deploy instructions, visit [FIO Protocol Developer Hub](https://dev.fio.net).
 
 ## Licenses and Copyrights
-[FIO License](https://github.com/fioprotocol/fio/blob/master/LICENSE)
-
 [FIO.Chronicle License](https://github.com/fioprotocol/fio.chronicle/blob/develop/LICENSE.txt)
 
 Source code repository: https://github.com/fioprotocol/fio.chronicle
@@ -31,22 +29,11 @@ limitations under the License.
 
 See the [release notes](https://github.com/fioprotocol/fio.chronicle/blob/develop/docs/releases.md) for information regarding FIO/EOS Chronicle releases.
 
-## Relevant Documentation (Tutorial, Chat, Clients, Uses)
-
-* [Chronicle Telegram chat](https://t.me/+TMWWcV1gBxQiqIkm)
-
-* [Chronicle Tutorial](https://github.com/EOSChronicleProject/chronicle-tutorial) explains the nodeos and Chronicle server installation in detail.
-
-* [Chronicle Consumer Module](https://github.com/EOSChronicleProject/chronicle-consumer-npm) is a Node.js module that consumer processes can be based on.
-
-* [Chronicle Consumer Module Examples](https://github.com/EOSChronicleProject/chronicle-consumer-npm-examples) is a number of examples using the Node.js module.
-
-* [Awesome Chronicle](https://github.com/EOSChronicleProject/awesome-chronicle) is a list of software projects and services using the software.
-
-* [Docker File](https://github.com/EOSTribe/eos-chronicle-docker) provided by EOS Tribe
-
 ## Clone the repository
-To clone the FIO.Chronicle repository, execute the command; `git clone --recursive https://github.com/fioprotocol/fio.chronicle.git`. see [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) for more information.
+To clone the FIO.Chronicle repository, execute the command;
+```shell
+git clone --recursive https://github.com/fioprotocol/fio.chronicle.git
+```
 
 ## Build and Install Instructions
 Minimum build requirements: Cmake 3.11, GCC 8.3.0
@@ -206,30 +193,28 @@ To export the FIO.Chronicle state execute the script, _snapshot.sh_, passing the
 ```shell
 sudo ./scripts/snapshot.sh -e
 ```
-The snapshot file, _/opt/fio-chronicle/bkup/fc-snapshot-2025-03-16T132648.tar.gz_, will be created in the **/opt/fio-chronicle/bkup** directory containing the FIO.Chronicle Relic DB Exporter state at March 16, 2025, 1:26:48 pm. Note that _/opt/fio-chronicle_ is the default installation direction for FIO.Chronicle.
+The snapshot file, _/opt/fio-chronicle/bkup/fc-snapshot-2025-03-16T132648.tar.gz_, will be created in the **/opt/fio-chronicle/bkup** directory containing the FIO.Chronicle state at March 16, 2025, 1:26:48 pm. Note that _/opt/fio-chronicle_ is the default installation directory for FIO.Chronicle.
 
 Other examples include;
 ```shell
 sudo ./scripts/snapshot.sh -e -a /tmp
 ```
-The snapshot file, _/tmp/fc-snapshot-2025-03-16T132648.tar.gz_, will be created in the **/tmp** directory containing the FIO.Chronicle Relic DB Exporter state at March 16, 2025, 1:26:48 pm.
+The snapshot file, _/tmp/fc-snapshot-2025-03-16T132648.tar.gz_, will be created in the **/tmp** directory containing the FIO.Chronicle state at March 16, 2025, 1:26:48 pm.
 
 ```shell
-sudo ./scripts/snapshot.sh -e -a /tmp/relicdb_snapshot
+sudo ./scripts/snapshot.sh -e -a /tmp/chronicle_snapshot
 ```
-The snapshot file, _/tmp/relicdb_snapshot_, will be created containing the FIO.Chronicle Relic DB Exporter state at March 16, 2025, 1:26:48 pm. Note that the file format is a tar gzip file regardless of the extention provided.
+The snapshot file, _/tmp/chronicle_snapshot_, will be created containing the FIO.Chronicle state at March 16, 2025, 1:26:48 pm. Note that the file format is a tar gzip file regardless of the extention provided.
 
 ```shell
 sudo ./scripts/snapshot.sh -e -s
 ```
-The snapshot file, /srv/fio/chronicle-bkup/fc-snapshot-2025-03-16T132648.tar.gz_, will be created containing the FIO.Chronicle Relic DB Exporter state at March 16, 2025, 1:26:48 pm. Note that the '-s' argument signified that FIO.Chronicle was installed as a service.
+The snapshot file, /srv/fio/chronicle-bkup/fc-snapshot-2025-03-16T132648.tar.gz_, will be created containing the FIO.Chronicle state at March 16, 2025, 1:26:48 pm. Note that the '-s' argument signified that FIO.Chronicle was installed as a service.
 
-To import the FIO.Relic database schema including tables, functions, users and data execute the script, _snapshot.sh_, passing the argument '-i' (for import), and the '-s' argument specifying the snapshot file. For example, to import the data previously exported to the file _/tmp/relicdb_snapshot_, execute the command; 
+To import the FIO.Chronicle state execute the script, _snapshot.sh_, passing the argument '-i' (for import), and the '-s' argument specifying the snapshot file. For example, to import the data previously exported to the file _/tmp/chronicle_snapshot_, execute the command; 
 ```shell
-sudo ./scripts/snapshot.sh -i -a /tmp/relicdb_snapshot
+sudo ./scripts/snapshot.sh -i -a /tmp/chronicle_snapshot
 ```
-
-Note: ***The snapshot file is a complete export of the FIO.Relic database. Executing the import script will clear any and all data as well as tables, functions and users!***
 
 ### Addendum
 For the purposes of confirming end-to-end connectivity refer to the configuration as well as the documents below to start a local FIO state history node as well as a local web socket server
