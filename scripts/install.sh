@@ -171,7 +171,6 @@ else
    sudo cp ${CONFIG_DIR}/config.ini.relic /srv/fio/chronicle-config/config.ini
 
    sudo cp ${BUILD_DIR}/chronicle-receiver /usr/local/sbin
-   # sudo cp ${PROJECT_DIR}/systemd/chronicle_receiver\@.service /etc/systemd/system/
    sudo cp ${PROJECT_DIR}/systemd/chronicle_receiver\@.service /lib/systemd/system/
    sudo systemctl daemon-reload
    sudo systemctl enable chronicle_receiver@fio
