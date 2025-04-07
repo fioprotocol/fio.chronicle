@@ -43,7 +43,8 @@ fi
 function usage() {
    echo
    printf "Usage: $0 OPTION...
-   -i     Intall Directory (FIO.Chronicle binary). Default: /opt/fio-chronicle
+   -i     Install Directory (FIO.Chronicle binary). Default: /opt/fio-chronicle
+   -p     Add PostgreSQL dependency to service install; must specify '-s' as well
    -s     Service Install: /usr/local/sbin and /srv/fio, Start/Stop via systemctl
    -x     Run in debug mode
    -h     Display usage
@@ -53,9 +54,10 @@ function usage() {
 
 # Set global vars and get command line options
 DEBUG=${DEBUG:-false}
+ADD_PG_DEPEND=${ADD_PG_DEPEND:-false}
 SERVICE_INSTALL=${SERVICE_INSTALL:-false}
 if [ $# -ne 0 ]; then
-   while getopts "i:sxh" opt; do
+   while getopts "i:psxh" opt; do
       # echo "flag -$flag, Argument $OPTARG";
       case "${opt}" in
       i)
@@ -64,6 +66,9 @@ if [ $# -ne 0 ]; then
             echo "Install Dir, ${INSTALL_DIR}, is invalid!"
             exit 2
          fi
+         ;;
+      p)
+         ADD_PG_DEPEND=true
          ;;
       s)
          SERVICE_INSTALL=true
@@ -92,8 +97,14 @@ fi
 
 # Test user passing both -i and -s
 if ${SERVICE_INSTALL} && [[ -n ${INSTALL_DIR} ]]; then
-   echo && echo "WARNING: Ignoring ${INSTALL_DIR} (-i) due to System Install (-s)"
-   pause
+   echo && echo "ERROR: Specifying both Install Directory (-i) and Service Install (-s) is not allowed!"
+   usage
+fi
+
+# Test user passing -p and not -s
+if ${ADD_PG_DEPEND} && ! ${SERVICE_INSTALL}; then
+   echo && echo "ERROR: Add PostgreSQL dependency (-p) must be specified with Service Install (-s)!"
+   usage
 fi
 
 # Set Install dir to default if not set
@@ -127,7 +138,7 @@ fi
 
 # Do either;
 # local install (into /opt)
-# system install (/usr/local/bin, etc/fio/chronicle, /var/lib/fio-chronicle)
+# service install (/usr/local/bin, etc/fio/chronicle, /var/lib/fio-chronicle)
 echo
 if yes_or_no "Clean up any existing install"; then
    if $SERVICE_INSTALL; then
@@ -171,7 +182,12 @@ else
    sudo cp ${CONFIG_DIR}/config.ini.relic /srv/fio/chronicle-config/config.ini
 
    sudo cp ${BUILD_DIR}/chronicle-receiver /usr/local/sbin
-   sudo cp ${PROJECT_DIR}/systemd/chronicle_receiver\@.service /lib/systemd/system/
+
+   if ${ADD_PG_DEPEND}; then
+      sudo cp ${PROJECT_DIR}/systemd/chronicle_receiver_pg_dep\@.service /lib/systemd/system/
+   else
+      sudo cp ${PROJECT_DIR}/systemd/chronicle_receiver\@.service /lib/systemd/system/
+   fi
    sudo systemctl daemon-reload
    sudo systemctl enable chronicle_receiver@fio
 
