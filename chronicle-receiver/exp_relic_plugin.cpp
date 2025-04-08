@@ -1302,6 +1302,38 @@ public:
                   PQclear(res);
                  
                 } //end if action is cancelfndreq
+                 else if ((actionname == "rejectfndreq")){
+                    string REQUESTSTATUSREJECT = "rejected";
+                  string HANDLEACTIVITYTYREJECTREQUEST = "reject_request";
+                  string fiochainrequestid = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_request_id"],ALLOW_EMPTY_VALUES);  
+                            
+                  string insertQuery = "SELECT inshandleactivitiesfiorequest("+
+                  boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+","+
+                      fiochainrequestid+",'"+
+                      HANDLEACTIVITYTYREJECTREQUEST+"','"+
+                      blocktimestamp+"');";
+
+                   //   ilog(" ins handle activities looks like ${d}",("d",insertQuery));  
+                  PGresult *res = PQexec(conn, insertQuery.c_str());
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                   terminalerror("rejectfndreqhandleact",insertQuery,conn,res);
+                    return;
+                  }
+                  PQclear(res);
+                
+                  
+                  insertQuery = "SELECT updfiorequestsstatus("+
+                    fiochainrequestid+",'"+
+                    REQUESTSTATUSREJECT+"');";
+                  res = PQexec(conn, insertQuery.c_str());
+                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                   terminalerror("rejectfundreqfioreqstatus",insertQuery,conn,res);
+                    return;
+                  }
+                  PQclear(res);
+                 
+                } //end if action is rejectfndreq
                  else if ((actionname == "regaddress")){
                   string handle = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_address"],ALLOW_EMPTY_VALUES);                                
                  string domain = "";
