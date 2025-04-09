@@ -45,7 +45,7 @@ Dependencies:
 * LLVM, version 7.1.0
 * PostgreSQL, version 16*
 
-**Currently PostgreSQL is a mandatory dependency despite the optional use of plugins that may require it. To install PostgreSQL execute the following commands (taken from https://www.postgresql.org/download/linux/ubuntu/)**
+**PostgreSQL is a mandatory dependency regardless of the plugin used. To install PostgreSQL execute the following commands (taken from https://www.postgresql.org/download/linux/ubuntu/)**
 ```shell
 sudo apt install curl ca-certificates
 sudo install -d /usr/share/postgresql-common/pgdg
