@@ -10,6 +10,14 @@ if [[ -z $DEPS_DIR ]]; then
   exit 1
 fi
 
+groups $(id -un) | grep sudo >/dev/null
+if [[ $? -ne 0 ]]; then
+  echo
+  echo "ERROR: User $(id -un) does NOT have sudo privilege! sudo privilege is required to run this script. Exiting..."
+  echo
+  exit 1
+fi
+
 ARCH=`uname -m`
 JOBS=$(nproc)
 
@@ -27,10 +35,6 @@ HOME_DIR="$(pwd)"
 BUILD_DIR=${HOME_DIR}/build
 
 . ${SCRIPTS_DIR}/utils.sh
-
-echo && echo "Checking package dependencies (pre-built)..."
-sudo ${SCRIPTS_DIR}/install_deps.sh
-echo Done
 
 install_cmake() {
   CMAKE_DIR=$1
