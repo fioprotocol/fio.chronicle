@@ -86,6 +86,7 @@ if ! ${SERVICE}; then
       while [ $COUNTER -lt 100 ]; do
          COUNTER=$(($COUNTER+1))
 
+         PID=$(pgrep chronicle)
          if [[ -n $PID ]]; then
             ps -ef | grep relicdb | grep -v grep | grep -q idle && kill -INT $PID
          else
