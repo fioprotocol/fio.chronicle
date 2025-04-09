@@ -568,7 +568,6 @@ public:
 
       auto rp = std::make_shared<chronicle::channels::receiver_pause>();
       rp->head = head;
-      ilog("EDEDEDEDED waiting exporter acked block ${b}",("b",exporter_acked_block));
       rp->acknowledged = exporter_acked_block;
       _receiver_pauses_chan.publish(channel_priority, rp);
       if( pause_time_msec >= 500 ) {
@@ -1906,11 +1905,8 @@ void receiver_plugin::exporter_will_ack_blocks(uint32_t max_unconfirmed) {
 
 
 void receiver_plugin::ack_block(uint32_t block_num) {
- // ilog("EDEDEDEDEDED called ack block with ${b}",("b",block_num));
   assert(my->exporter_will_ack);
- // ilog("EDEDEDEDEDED called ack block with ${b} after assert",("b",block_num));
   if( my->forked_at_block > 0 ) {
-   // ilog("EDEDEDEDEDED called ack block with ${b} in the first if",("b",block_num));
     uint32_t wait_for_ack = my->forked_at_block - 1;
 
     // ignore all confirmations for higher blocks until we receive fork-1 acknowledged
