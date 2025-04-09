@@ -121,8 +121,8 @@ fi
 if $RESET; then
    echo && echo "Reset FIO.Chronicle state..." && echo
    if yes_or_no "Proceed"; then
-      sudo rm -f ${DATA_DIR}/lock.bin
-      sudo rm -f ${DATA_DIR}/shared_memory.bin
+      sudo rm -f ${DATA_DIR}/receiver-state/lock.bin
+      sudo rm -f ${DATA_DIR}/receiver-state/shared_memory.bin
   fi
 fi
 
