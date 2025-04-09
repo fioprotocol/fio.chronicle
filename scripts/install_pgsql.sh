@@ -96,8 +96,8 @@ echo && echo "Updating package list (again)..."
 apt update -y
 
 if ${DEV_ONLY}; then
-  echo && echo "Installing PostgreSQL v${POSTGRES_VER}.x development libraries"
-  apt install -y postgresql-server-dev-${POSTGRES_VER} libpq-dev
+  echo && echo "Installing PostgreSQL v${POSTGRES_VER}.x development library"
+  apt install -y libpq-dev
 else
   echo && echo "Installing PostgreSQL v${POSTGRES_VER}.x server, client, and development libraries..."
   apt install -y postgresql-${POSTGRES_VER} postgresql-server-dev-${POSTGRES_VER} postgresql-contrib-${POSTGRES_VER} libpq-dev
