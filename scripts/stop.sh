@@ -57,8 +57,8 @@ fi
 echo && echo "Stopping FIO.Chronicle gracefully..."
 
 if ! ${SERVICE} ; then
-   if systemctl -q is-enabled chronicle_receiver@fio; then
-      echo && echo "FIO.Chronicle receiver appears to be installed as a service"
+   if systemctl -q is-active chronicle_receiver@fio && systemctl -q is-enabled chronicle_receiver@fio; then
+      echo && echo "FIO.Chronicle receiver appears to be installed and enabled as a service"
       echo
       if yes_or_no "Use systemctl to stop FIO.Chronicle receiver"; then
         SERVICE=true
@@ -77,19 +77,25 @@ if ${SERVICE}; then
 fi
 
 if ! ${SERVICE}; then
-   COUNTER=0
-   while [ $COUNTER -lt 100 ]; do
-      COUNTER=$(($COUNTER+1))
+   PID=$(pgrep chronicle)
 
-      PID=$(pgrep chronicle)
-      if [[ -n $PID ]]; then
-         ps -ef | grep -v grep | grep relicdb | grep -q idle && kill -INT $PID
-      else
-         break
-      fi
-   done
+   if ! ps -ef | grep -v grep | grep -q postgresql; then
+      kill -INT $PID
+   else
+      COUNTER=0
+      while [ $COUNTER -lt 100 ]; do
+         COUNTER=$(($COUNTER+1))
+
+         if [[ -n $PID ]]; then
+            ps -ef | grep relicdb | grep -v grep | grep -q idle && kill -INT $PID
+         else
+            break
+         fi
+      done
+   fi
 
    # Check if really down...
+   sleep 1
    PID=$(pgrep chronicle)
    if [[ -n $PID ]]; then
       echo && echo "WARNING: Unable to shut down gracefully! Shut down by force?"

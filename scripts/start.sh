@@ -88,7 +88,7 @@ fi
 
 echo && echo "Starting Fio.Chronicle..."
 if ! ${SERVICE} ; then
-   if systemctl -q is-enabled chronicle_receiver@fio; then
+   if systemctl -q is-active chronicle_receiver@fio && systemctl -q is-enabled chronicle_receiver@fio; then
       echo && echo "FIO.Chronicle receiver appears to be installed as a service"
       echo
       if yes_or_no "Use systemctl to start FIO.Chronicle receiver"; then
