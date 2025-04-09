@@ -69,7 +69,9 @@ LLVM_VER=7.1.0
 HOME_DIR="$(pwd)"
 BUILD_DIR=${HOME_DIR}/build
 
-echo && echo "Checking build/run-time dependencies..."
+echo && echo "Installing build/run-time dependencies..."
+sudo ${SCRIPTS_DIR}/install_deps.sh
+sudo ${SCRIPTS_DIR}/install_pgsql.sh -d
 . ${SCRIPTS_DIR}/build_deps.sh ${DEPS_DIR}
 
 # build Chronicle

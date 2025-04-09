@@ -88,7 +88,7 @@ fi
 
 echo && echo "Starting Fio.Chronicle..."
 if ! ${SERVICE} ; then
-   if systemctl -q is-enabled chronicle_receiver@fio; then
+   if systemctl -q is-active chronicle_receiver@fio && systemctl -q is-enabled chronicle_receiver@fio; then
       echo && echo "FIO.Chronicle receiver appears to be installed as a service"
       echo
       if yes_or_no "Use systemctl to start FIO.Chronicle receiver"; then
@@ -121,8 +121,8 @@ fi
 if $RESET; then
    echo && echo "Reset FIO.Chronicle state..." && echo
    if yes_or_no "Proceed"; then
-      sudo rm -f ${DATA_DIR}/lock.bin
-      sudo rm -f ${DATA_DIR}/shared_memory.bin
+      sudo rm -f ${DATA_DIR}/receiver-state/lock.bin
+      sudo rm -f ${DATA_DIR}/receiver-state/shared_memory.bin
   fi
 fi
 

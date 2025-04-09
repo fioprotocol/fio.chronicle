@@ -148,7 +148,7 @@ if yes_or_no "Clean up any existing install"; then
       sudo rm -f /usr/local/sbin/chronicle-receiver && sudo rm -rf /srv/fio/ \
          && sudo rm -f /lib/systemd/system/chronicle_receiver@.service
    else
-      rm -rf ${INSTALL_DIR}
+      sudo rm -rf ${INSTALL_DIR}
    fi
 fi
 
