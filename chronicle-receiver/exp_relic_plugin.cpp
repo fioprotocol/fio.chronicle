@@ -1962,30 +1962,6 @@ public:
                   } //end loop over pub addresses.
                     
                 } //end if action is remaddress
-                else if ((actionname == "wraptokens")){
-                   string payeracct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
-                  string payeeacct = "fio.oracle";
-                  string memo = "";
-                  string TRNSTYPEWRAP = "wrap";
-                  string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["amount"],DISALLOW_EMPTY_VALUES);
-
-                  string insertQuery = "SELECT instokentransfers("+
-                       boost::lexical_cast<std::string>(fktransactionid)+","+
-                      bnums+",'"+
-                      payeracct+"','"+
-                      payeeacct+"',"+
-                      sufamount+",'"+
-                      TRNSTYPEWRAP +"','"+
-                      memo+"','"+
-                      blocktimestamp+"');";
-                      
-                  PGresult *res = PQexec(conn, insertQuery.c_str());
-                  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                    terminalerror("wraptokens",insertQuery,conn,res);
-                    return;
-                  }
-                  PQclear(res);
-                } //end if action is wraptokens
                  else if ((actionname == "stakefio")){
                    string stakingacct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                   string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["amount"],DISALLOW_EMPTY_VALUES);
