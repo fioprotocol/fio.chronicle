@@ -1962,6 +1962,20 @@ public:
                   } //end loop over pub addresses.
                     
                 } //end if action is remaddress
+                else if ((actionname == "wraptokens")){
+                   
+                   // Skip inserting a separate 'wrap' token transfer record.
+                   // The subsequent 'transfer' action for the same transaction already records the
+                   // movement of tokens, and keeping both entries results in double-counting of the
+                   // payer's balance.
+                   //
+                   // Previous implementation called instokentransfers() with token_transfer_type
+                   // 'wrap'.  That duplicate entry caused payer balances to be decremented twice
+                   // when combined with the corresponding 'transfer' or 'blockchain_fee' rows.
+                   //
+                   // No database operation is required here, so we simply ignore this action.
+                   continue;
+                } //end if action is wraptokens
                  else if ((actionname == "stakefio")){
                    string stakingacct = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["actor"],ALLOW_EMPTY_VALUES);                                
                   string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["amount"],DISALLOW_EMPTY_VALUES);
@@ -2061,8 +2075,9 @@ public:
                   string FIOSTAKINGSTR = "Paying Staking Rewards";
                   string FIOPRODUCERSTR = "Paying producer from treasury";
                   string FIOFOUNDATIONSTR = "Paying foundation from treasury";
-                  string FIOWRAPPINGSTR = "Token Wrapping Oracle Fee";
+                  string FIOWRAPPINGORACLEFEESTR = "Token Wrapping Oracle Fee";
                   string FIOUNWRAPPINGSTR = "Token Unwrapping";
+                  string FIOWRAPPINGSTR = "Token Wrapping";
 
                   string TRNSTYPEBLOCKCHAINFEE = "blockchain_fee";
                   string TRNSTYPETPIDREWARD = "tpid_reward";
@@ -2071,6 +2086,7 @@ public:
                   string TRNSTYPEFOUNDATIONREWARD = "foundation_reward";
                   string TRNSTYPEORACLEFEE = "oracle_fee";
                   string TRNSTYPEUNWRAP = "unwrap";
+                  string TRNSTYPEWRAP = "wrap";
                   
                   if (memot.find(FIOFEESTR)!= std::string::npos){
                       trnstype = TRNSTYPEBLOCKCHAINFEE;
@@ -2082,11 +2098,13 @@ public:
                     trnstype = TRNSTYPEBPREWARD;
                   }else if (memot.find(FIOFOUNDATIONSTR)!= std::string::npos){
                     trnstype = TRNSTYPEFOUNDATIONREWARD;
-                  }else if (memot.find(FIOWRAPPINGSTR)!= std::string::npos){
+                  }else if (memot.find(FIOWRAPPINGORACLEFEESTR)!= std::string::npos){
                     trnstype = TRNSTYPEORACLEFEE;
                   }else if (memot.find(FIOUNWRAPPINGSTR)!= std::string::npos){
                     trnstype = TRNSTYPEUNWRAP;
-                  } 
+                  } else if (memot.find(FIOWRAPPINGSTR)!= std::string::npos){
+                    trnstype = TRNSTYPEWRAP;
+                  }
                   string sufamount = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["quantity"],DISALLOW_EMPTY_VALUES);
                   sufamount.erase(std::remove(sufamount.begin(), sufamount.end(), '.'), sufamount.end());
                   string substringToRemove = " FIO";
