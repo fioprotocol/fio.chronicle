@@ -1,5 +1,3 @@
-
-
 // copyright defined in LICENSE.txt
 
 #include "exp_relic_plugin.hpp"
@@ -2031,7 +2029,97 @@ public:
                   }
                   PQclear(res);
                 } //end if action is retire
-
+                else if ((actionname == "fipxlviii") && (contractaccount == "fio.token")) {
+                  ilog("FIP-48: Processing fipxlviii action for transaction ${t}", ("t", fktransactionid));
+                  
+                  // FIP-48 trigger: Handle fio.token:fipxlviii with action_ordinal = 1
+                  // Reallocates tokens from 13 permanently locked Initial Integrating Wallet accounts 
+                  // to the FIO Foundation account (pkfbwyi2qzii) for FIO Handles Giveaways.
+                  // See: https://github.com/fioprotocol/fips/blob/master/fip-0048.md
+                  
+                  // FIP-48 account data: hardcoded as per specification
+                  // Each entry represents: {payer_account, locked_balance_in_suf}
+                  // Note: amounts are in SUF (Smallest Unit of FIO = 10^9 FIO)
+                  struct FIP48Transfer {
+                    const char* payer_account;
+                    const char* amount_suf;
+                  };
+                  
+                  static const FIP48Transfer fip48_transfers[] = {
+                    {"xkezj1ocwe4r", "9999960000000000"},
+                    {"mck32myftiau", "10000000000000000"},
+                    {"hjvwdy5p4zvs", "7000000000000000"},
+                    {"2mskjvkhj334", "5500000000000000"},
+                    {"oadme4v54cly", "2500000000000000"},
+                    {"jsniuyaaeblr", "1999999400000000"},
+                    {"nadppzyxtxjx", "1500000000000000"},
+                    {"zvt11xu5czlk", "1000000000000"},
+                    {"dioxleem5hmr", "1000000000000"},
+                    {"iud1tjwtt2ey", "1000000000000"},
+                    {"xgyg22tfizja", "1000000000000"},
+                    {"4urqjmtfvmjj", "1000000000000"},
+                    {"deq54dxuyquh", "1000000000000"}
+                  };
+                  
+                  const string payee_account = "pkfbwyi2qzii";  // FIO Foundation account
+                  const string trnstype = "transfer";
+                  const string memo = escapesqlstring("FIP-48", conn);
+                  
+                  // Process each transfer from integrating wallet to FIO Foundation
+                  const size_t num_transfers = sizeof(fip48_transfers) / sizeof(fip48_transfers[0]);
+                  for (size_t i = 0; i < num_transfers; ++i) {
+                    const string payer_account = fip48_transfers[i].payer_account;
+                    const string amount_suf = fip48_transfers[i].amount_suf;
+                    
+                    // Insert token transfer record
+                    string insertQuery = "SELECT instokentransfers("+
+                      boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      payer_account+"','"+
+                      payee_account+"',"+
+                      amount_suf+",'"+
+                      trnstype+"',"+
+                      memo+",'"+
+                      blocktimestamp+"');";
+                    
+                    PGresult *res = PQexec(conn, insertQuery.c_str());
+                    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                      terminalerror("fipxlviii_transfer",insertQuery,conn,res);
+                      return;
+                    }
+                    PQclear(res);
+                    
+                    // Insert account activity for sender (payer)
+                    insertQuery = "SELECT insaccountactivities("+
+                      boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      payer_account+"','"+
+                      +"sender');";
+                    
+                    res = PQexec(conn, insertQuery.c_str());
+                    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                      terminalerror("fipxlviii_sender_activity",insertQuery,conn,res);
+                      return;
+                    }
+                    PQclear(res);
+                    
+                    // Insert account activity for receiver (payee)
+                    insertQuery = "SELECT insaccountactivities("+
+                      boost::lexical_cast<std::string>(fktransactionid)+","+
+                      bnums+",'"+
+                      payee_account+"','"+
+                      +"receiver');";
+                    
+                    res = PQexec(conn, insertQuery.c_str());
+                    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                      terminalerror("fipxlviii_receiver_activity",insertQuery,conn,res);
+                      return;
+                    }
+                    PQclear(res);
+                  }
+                  
+                  ilog("FIP-48: Successfully processed ${n} token transfers", ("n", num_transfers));
+                } //end if action is fipxlviii (FIP-48)
 
                 } //end creator_action ordinal is 0
                 else if ((iactordinal > 1)&&(fktransactionid > -1)) { //action ordinal >1, and a valid tx 
