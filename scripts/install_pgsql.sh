@@ -75,7 +75,34 @@ fi
 
 # Begin install
 POSTGRES_VER=16
+POSTGRES_FULL_VER=16.7  # For source installation
 echo && echo "PostgreSQL v${POSTGRES_VER} Install"
+
+# Check if PostgreSQL is already installed
+# Check both standard PATH and source installation path
+PSQL_CMD=""
+if command -v psql &> /dev/null; then
+  PSQL_CMD="psql"
+elif [[ -x /usr/local/pgsql/bin/psql ]]; then
+  PSQL_CMD="/usr/local/pgsql/bin/psql"
+fi
+
+if [[ -n "${PSQL_CMD}" ]]; then
+  # Extract major version number (e.g., "psql (PostgreSQL) 16.7" -> "16")
+  INSTALLED_VER=$(${PSQL_CMD} --version 2>/dev/null | sed -n 's/.*PostgreSQL[^0-9]*\([0-9]*\).*/\1/p')
+  echo && echo "Detected existing PostgreSQL installation: $(${PSQL_CMD} --version 2>/dev/null)"
+  echo "Installed major version: ${INSTALLED_VER}"
+  
+  if [[ "${INSTALLED_VER}" == "${POSTGRES_VER}" ]]; then
+    echo && echo "PostgreSQL ${POSTGRES_VER} is already installed."
+    echo "Skipping installation. If you want to reinstall, please uninstall first."
+    exit 0
+  elif [[ -n "${INSTALLED_VER}" ]]; then
+    echo && echo "WARNING: PostgreSQL ${INSTALLED_VER} is already installed (requested: ${POSTGRES_VER})."
+    echo "Proceeding may cause conflicts. Consider uninstalling the existing version first."
+    pause
+  fi
+fi
 
 if ${UPGRADE_OS}; then
   echo && echo "Updating OS..."
@@ -84,10 +111,25 @@ if ${UPGRADE_OS}; then
 fi
 
 echo && echo "Installing required packages..."
-apt install -y gnupg2 wget vim
+apt install -y gnupg2 wget vim lsb-release
 
+# Check Ubuntu version
+OS_CODENAME=$(lsb_release -cs)
+echo && echo "Detected OS: ${OS_CODENAME}"
+
+# Auto-detect installation method based on OS
+if [[ "${OS_CODENAME}" == "focal" ]]; then
+  echo && echo "Ubuntu 20.04 detected."
+  echo "PostgreSQL ${POSTGRES_VER} packages are not available for focal."
+  echo "Installing from source..."
+  echo
+  ${SCRIPT_DIR}/install_pgsql_from_source.sh ${POSTGRES_FULL_VER}
+  exit $?
+fi
+
+# Standard package installation for Ubuntu 22.04+
 echo && echo "Adding the postgres repository..."
-sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+sh -c "echo \"deb https://apt.postgresql.org/pub/repos/apt ${OS_CODENAME}-pgdg main\" > /etc/apt/sources.list.d/pgdg.list"
 
 echo && echo "Set the signing key for the postgres repository..."
 curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
@@ -119,12 +161,26 @@ if ! ${DEV_ONLY}; then
   echo "case of an error, exit this script, determine the failure reason(s) and fix the installation"
   pause
 
-  echo && echo "Enabling and starting the PostgreSQL service..."
-  systemctl enable postgresql
-  systemctl start postgresql
+  # Check if systemd is available (not available in Docker or some EC2 instances)
+  if command -v systemctl &> /dev/null && systemctl --version &> /dev/null; then
+    echo && echo "Enabling and starting the PostgreSQL service (systemd)..."
+    systemctl enable postgresql
+    systemctl start postgresql
 
-  echo && echo "Checking service status..."
-  sleep 5
-  systemctl status postgresql
+    echo && echo "Checking service status..."
+    sleep 5
+    systemctl status postgresql
+  elif command -v service &> /dev/null; then
+    echo && echo "Starting the PostgreSQL service (SysV/service)..."
+    service postgresql start
+
+    echo && echo "Checking service status..."
+    sleep 5
+    service postgresql status || true
+  else
+    echo && echo "WARNING: Neither systemctl nor service command found."
+    echo "You may need to start PostgreSQL manually."
+    echo "Try: pg_ctlcluster ${POSTGRES_VER} main start"
+  fi
 fi
 echo
