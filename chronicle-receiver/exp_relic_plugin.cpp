@@ -13,6 +13,8 @@
 #include <stdexcept>
 #include <limits>
 #include <cstdint>
+#include <cctype>
+#include <cstdio>
 
 
 
@@ -35,6 +37,84 @@ namespace {
   const char* RELIC_MAXUNACK_OPT = "exp-relic-max-unack";
   const char* RELIC_MAXQUEUE_OPT = "exp-reic-max-queue";
   const char* RELIC_BINHDR = "exp-relic-bin-header";
+
+  bool is_leap_year(int year) {
+    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+  }
+
+  int days_in_month(int year, int month) {
+    static const int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    if (month < 1 || month > 12) {
+      return 0;
+    }
+    if (month == 2 && is_leap_year(year)) {
+      return 29;
+    }
+    return days[month - 1];
+  }
+
+  bool parse_iso_timestamp(const string& ts,
+                           int& year,
+                           int& month,
+                           int& day,
+                           int& hour,
+                           int& minute,
+                           int& second) {
+    if (ts.size() != 19 || ts[4] != '-' || ts[7] != '-' || ts[10] != 'T' || ts[13] != ':' || ts[16] != ':') {
+      return false;
+    }
+
+    for (size_t i = 0; i < ts.size(); ++i) {
+      if (i == 4 || i == 7 || i == 10 || i == 13 || i == 16) {
+        continue;
+      }
+      if (!std::isdigit(static_cast<unsigned char>(ts[i]))) {
+        return false;
+      }
+    }
+
+    year = std::stoi(ts.substr(0, 4));
+    month = std::stoi(ts.substr(5, 2));
+    day = std::stoi(ts.substr(8, 2));
+    hour = std::stoi(ts.substr(11, 2));
+    minute = std::stoi(ts.substr(14, 2));
+    second = std::stoi(ts.substr(17, 2));
+    return true;
+  }
+
+  string normalize_contract_expiration_timestamp(const string& expirationtimestamp,
+                                                 const string& actionname,
+                                                 const string& trid) {
+    int year = 0;
+    int month = 0;
+    int day = 0;
+    int hour = 0;
+    int minute = 0;
+    int second = 0;
+    if (!parse_iso_timestamp(expirationtimestamp, year, month, day, hour, minute, second)) {
+      return expirationtimestamp;
+    }
+
+    const int max_day = days_in_month(year, month);
+    const bool valid_date =
+      max_day > 0 && day >= 1 && day <= max_day && hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 && second >= 0 && second <= 59;
+    if (valid_date) {
+      return expirationtimestamp;
+    }
+
+    // Known FIO contract bug: some renewdomain responses emit non-leap-year Feb-29.
+    // Those values correspond to the same date/time one year ahead in a leap year.
+    if (actionname == "renewdomain" && month == 2 && day == 29 && !is_leap_year(year) && is_leap_year(year + 1)) {
+      char corrected[20] = {0};
+      std::snprintf(corrected, sizeof(corrected), "%04d-%02d-%02dT%02d:%02d:%02d",
+                    year + 1, month, day, hour, minute, second);
+      ilog("Corrected malformed ${action} expiration for tx ${txid}: ${before} -> ${after}",
+           ("action", actionname)("txid", trid)("before", expirationtimestamp)("after", corrected));
+      return corrected;
+    }
+
+    return expirationtimestamp;
+  }
 }
 
 class exp_relic_plugin_impl : std::enable_shared_from_this<exp_relic_plugin_impl> {
@@ -801,6 +881,7 @@ public:
                 else if ((actionname == "renewdomain")){
                   string domainname = getjsonstring(UNKNOWN_STRING,(rapidjson::Value&)actdata["fio_domain"],ALLOW_EMPTY_VALUES);                                
                  string expirationtimestamp = getjsonstring(UNKNOWN_TIMESTAMP,(rapidjson::Value&)respdoc["expiration"],ALLOW_EMPTY_VALUES);
+                 expirationtimestamp = normalize_contract_expiration_timestamp(expirationtimestamp, actionname, trid);
                 
                   string insertQuery = "SELECT upddomainexp('"+
                       domainname+"','"+
